@@ -1,0 +1,45 @@
+name: vendly_customers
+description: "Vendly Customer App - Discover stores, shop products, and track deliveries"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Navigation
+  go_router: ^14.6.2
+  
+  # State Management
+  flutter_riverpod: ^2.6.1
+  
+  # UI Components
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
+  
+  # Animations
+  lottie: ^3.1.2
+  
+  # Utilities
+  shared_preferences: ^2.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  riverpod_lint: ^2.3.13
+
+flutter:
+  uses-material-design: true
+  
+  # Assets
+  assets:
+    - assets/images/
+    - assets/images/logos/
+    - assets/images/icons/
+    - assets/images/onboarding/
+    - assets/images/placeholders/
+    - assets/animations/
