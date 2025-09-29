@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/product.dart';
 
 /// Product carousel widget for store cards
 class ProductCarousel extends StatefulWidget {
-  const ProductCarousel({super.key, required this.products, this.height = 160});
+  const ProductCarousel({
+    super.key, 
+    required this.products, 
+    this.height = 160,
+    this.storeId,
+    this.onProductTap,
+  });
 
   final List<Product> products;
   final double height;
+  final String? storeId;
+  final Function(Product)? onProductTap;
 
   @override
   State<ProductCarousel> createState() => _ProductCarouselState();
@@ -69,17 +78,29 @@ class _ProductCarouselState extends State<ProductCarousel> {
   }
 
   Widget _buildProductImage(Product product) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceSecondary,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(AppTheme.borderRadiusLarge),
-          topRight: Radius.circular(AppTheme.borderRadiusLarge),
+    return GestureDetector(
+      onTap: () {
+        if (widget.onProductTap != null) {
+          widget.onProductTap!(product);
+        } else if (widget.storeId != null) {
+          // Navigate to product detail within store context
+          context.go('/store/${widget.storeId}/product/${product.id}');
+        } else {
+          // Fallback navigation (shouldn't normally happen)
+          context.goNamed('product-detail', pathParameters: {'productId': product.id});
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surfaceSecondary,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(AppTheme.borderRadiusLarge),
+            topRight: Radius.circular(AppTheme.borderRadiusLarge),
+          ),
         ),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
           // Placeholder for product image
           Container(
             decoration: BoxDecoration(
@@ -143,7 +164,8 @@ class _ProductCarouselState extends State<ProductCarousel> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

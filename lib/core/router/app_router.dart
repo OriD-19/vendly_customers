@@ -7,6 +7,8 @@ import '../../features/home/home_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/orders/orders_screen.dart';
 import '../../features/stores/screens/store_detail_screen.dart';
+import '../../features/stores/screens/product_detail_screen.dart';
+import '../../features/cart/screens/cart_screen.dart';
 import '../../shared/main_scaffold.dart';
 
 /// App routing configuration using GoRouter
@@ -17,7 +19,9 @@ class AppRouter {
   static const String home = '/home';
   static const String search = '/search';
   static const String orders = '/orders';
+  static const String cart = '/cart';
   static const String storeDetail = '/store';
+  static const String productDetail = '/product';
 
   static final GoRouter router = GoRouter(
     initialLocation: login,
@@ -34,24 +38,6 @@ class AppRouter {
       GoRoute(
         path: onboarding,
         builder: (context, state) => const OnboardingScreen(),
-      ),
-
-      // Store Detail Route (outside shell for full screen)
-      GoRoute(
-        name: 'store-detail',
-        path: '/store/:storeId',
-        builder: (context, state) {
-          final storeId = state.pathParameters['storeId'];
-          print('Building StoreDetailScreen for storeId: $storeId'); // Debug log
-          
-          if (storeId == null) {
-            return const Scaffold(
-              body: Center(child: Text('Store ID is required')),
-            );
-          }
-          
-          return StoreDetailScreen(storeId: storeId);
-        },
       ),
 
       // Debug test route
@@ -79,6 +65,48 @@ class AppRouter {
           GoRoute(
             path: orders,
             builder: (context, state) => const OrdersScreen(),
+          ),
+          GoRoute(
+            path: cart,
+            builder: (context, state) => const CartScreen(),
+          ),
+        ],
+      ),
+
+      // Store Detail Route (outside shell for proper navigation stack)
+      GoRoute(
+        name: 'store-detail',
+        path: '/store/:storeId',
+        builder: (context, state) {
+          final storeId = state.pathParameters['storeId'];
+          print('Building StoreDetailScreen for storeId: $storeId'); // Debug log
+          
+          if (storeId == null) {
+            return const Scaffold(
+              body: Center(child: Text('Store ID is required')),
+            );
+          }
+          
+          return StoreDetailScreen(storeId: storeId);
+        },
+        routes: [
+          // Product Detail Route as sub-route of Store Detail
+          GoRoute(
+            name: 'product-detail',
+            path: 'product/:productId',
+            builder: (context, state) {
+              final productId = state.pathParameters['productId'];
+              final storeId = state.pathParameters['storeId'];
+              print('Building ProductDetailScreen for productId: $productId, storeId: $storeId'); // Debug log
+              
+              if (productId == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Product ID is required')),
+                );
+              }
+              
+              return ProductDetailScreen(productId: productId);
+            },
           ),
         ],
       ),

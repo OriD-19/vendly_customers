@@ -294,7 +294,9 @@ class _FeaturedTab extends StatelessWidget {
             return ProductListItem(
               product: product,
               showBestSellerBadge: true,
-              onTap: () {},
+              onTap: () {
+                context.go('/store/${store.id}/product/${product.id}');
+              },
             );
           }),
         ],
@@ -339,7 +341,12 @@ class _CatalogueTab extends StatelessWidget {
                 ),
 
                 ...categoryProducts.map((product) {
-                  return ProductListItem(product: product, onTap: () {});
+                  return ProductListItem(
+                    product: product, 
+                    onTap: () {
+                      context.go('/store/${store.id}/product/${product.id}');
+                    },
+                  );
                 }),
 
                 const SizedBox(height: 16),

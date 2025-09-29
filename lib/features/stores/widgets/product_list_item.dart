@@ -22,7 +22,7 @@ class ProductListItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap, // Note: onTap should always be provided when used in store context
         borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -248,7 +248,7 @@ class ProductItemCompact extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
         ),
         child: InkWell(
-          onTap: onTap,
+          onTap: onTap, // Note: onTap should always be provided when used in store context
           borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
