@@ -4,17 +4,14 @@ import '../core/router/app_router.dart';
 
 /// Main scaffold with bottom navigation for the app
 class MainScaffold extends StatelessWidget {
-  const MainScaffold({
-    super.key,
-    required this.child,
-  });
+  const MainScaffold({super.key, required this.child});
 
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
-    
+
     return Scaffold(
       body: child,
       bottomNavigationBar: BottomNavigationBar(
@@ -33,9 +30,20 @@ class MainScaffold extends StatelessWidget {
             label: 'Buscar',
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.shopping_bag_outlined),
-            activeIcon: const Icon(Icons.shopping_bag),
-            label: 'Pedidos',
+            icon: Badge(
+              label: const Text('4'),
+              child: const Icon(Icons.shopping_cart_outlined),
+            ),
+            activeIcon: Badge(
+              label: const Text('4'),
+              child: const Icon(Icons.shopping_cart),
+            ),
+            label: 'Carrito',
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+            label: 'Perfil',
           ),
         ],
       ),
@@ -49,7 +57,7 @@ class MainScaffold extends StatelessWidget {
       case '/search':
         return 1;
       case '/orders':
-        return 2;
+        return 3; // Orders moved to index 3
       default:
         return 0;
     }
@@ -64,6 +72,9 @@ class MainScaffold extends StatelessWidget {
         GoRouter.of(context).go(AppRouter.search);
         break;
       case 2:
+        GoRouter.of(context).go(AppRouter.cart);
+        break;
+      case 3:
         GoRouter.of(context).go(AppRouter.orders);
         break;
     }

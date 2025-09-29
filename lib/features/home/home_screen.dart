@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../stores/services/store_data_service.dart';
+import '../stores/widgets/store_card.dart';
 
 /// Home screen - Main landing page
 class HomeScreen extends StatelessWidget {
@@ -31,28 +34,101 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+      body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Welcome Section
-            _WelcomeSection(),
-            
-            SizedBox(height: 24),
-            
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: _WelcomeSection(),
+            ),
+
+            const SizedBox(height: 8),
+
             // Categories Section
-            _CategoriesSection(),
-            
-            SizedBox(height: 24),
-            
-            // Featured Stores
-            _FeaturedStoresSection(),
-            
-            SizedBox(height: 24),
-            
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: _CategoriesSection(),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Featured Stores Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Tiendas destacadas',
+                    style: AppTypography.h3.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: Text(
+                      'Ver todas',
+                      style: AppTypography.labelMedium.copyWith(
+                        color: AppColors.persianIndigo,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Store Cards List
+            _StoresList(),
+
+            // Debug button
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        print('Testing navigation to /test');
+                        try {
+                          context.push('/test');
+                        } catch (e) {
+                          print('Test route error: $e');
+                        }
+                      },
+                      child: const Text('Test /test Route'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        print('Testing navigation to /store/1');
+                        try {
+                          context.push('/store/1');
+                        } catch (e) {
+                          print('Store route error: $e');
+                        }
+                      },
+                      child: const Text('Test Store Route'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
             // Promotions
-            _PromotionsSection(),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: _PromotionsSection(),
+            ),
+
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -109,10 +185,7 @@ class _CategoriesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Categorías',
-          style: AppTypography.h3,
-        ),
+        Text('Categorías', style: AppTypography.h3),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -145,71 +218,44 @@ class _CategoriesSection extends StatelessWidget {
   }
 }
 
-class _FeaturedStoresSection extends StatelessWidget {
-  const _FeaturedStoresSection();
-
+class _StoresList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Tiendas destacadas',
-              style: AppTypography.h3,
-            ),
-            TextButton(
-              onPressed: () {},
-              child: Text(
-                'Ver todas',
-                style: AppTypography.labelMedium.copyWith(
-                  color: AppColors.persianIndigo,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 5,
-            itemBuilder: (context, index) {
-              return Container(
-                width: 100,
-                margin: const EdgeInsets.only(right: 16),
-                child: Column(
-                  children: [
-                    Container(
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.store,
-                          size: 32,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Tienda ${index + 1}',
-                      style: AppTypography.labelSmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+    final stores = StoreDataService.getAllStores();
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: stores.length,
+      itemBuilder: (context, index) {
+        return StoreCard(
+          store: stores[index],
+          onTap: () {
+            final storeId = stores[index].id;
+            final route = '/store/$storeId';
+            print('Navigating to: $route'); // Debug log
+            
+            try {
+              // Try using context.pushNamed with named route
+              context.pushNamed('store-detail', pathParameters: {'storeId': storeId});
+            } catch (e) {
+              print('Navigation error: $e'); // Debug log
+              // Fallback to context.go()
+              try {
+                context.go(route);
+              } catch (e2) {
+                print('Fallback navigation error: $e2');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error al navegar a la tienda: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+        );
+      },
     );
   }
 }
@@ -222,10 +268,7 @@ class _PromotionsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Promociones especiales',
-          style: AppTypography.h3,
-        ),
+        Text('Promociones especiales', style: AppTypography.h3),
         const SizedBox(height: 16),
         Container(
           height: 120,
@@ -234,10 +277,7 @@ class _PromotionsSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
           ),
           child: const Center(
-            child: Text(
-              '🎉 Ofertas del día',
-              style: TextStyle(fontSize: 18),
-            ),
+            child: Text('🎉 Ofertas del día', style: TextStyle(fontSize: 18)),
           ),
         ),
       ],
