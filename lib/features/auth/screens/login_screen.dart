@@ -21,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -95,7 +95,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   enabled: !_isLoading,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                       color: AppColors.textTertiary,
                     ),
                     onPressed: () {
@@ -144,7 +146,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: _isLoading ? null : () => context.go(AppRouter.register),
+                      onPressed: _isLoading
+                          ? null
+                          : () => context.go(AppRouter.register),
                       child: Text(
                         'Sign up',
                         style: AppTypography.bodyMedium.copyWith(
@@ -188,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-          
+
           // Navigate to home
           context.go(AppRouter.home);
         } else {

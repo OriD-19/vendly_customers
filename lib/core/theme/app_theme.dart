@@ -44,7 +44,7 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       fontFamily: AppTypography.fontFamily,
-      
+
       // App Bar Theme
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surfacePrimary,
@@ -201,7 +201,7 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       fontFamily: AppTypography.fontFamily,
-      
+
       // App Bar Theme
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surfacePrimaryDark,

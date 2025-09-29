@@ -20,25 +20,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<OnboardingPage> _pages = [
     OnboardingPage(
       title: 'Descubre tiendas increíbles',
-      description: 'Explora una amplia variedad de tiendas locales y encuentra exactamente lo que necesitas, todo en un solo lugar.',
+      description:
+          'Explora una amplia variedad de tiendas locales y encuentra exactamente lo que necesitas, todo en un solo lugar.',
       imagePath: 'assets/images/onboarding/browse_stores.png',
       backgroundColor: AppColors.mauve.withOpacity(0.1),
     ),
     OnboardingPage(
       title: 'Paga sin complicaciones',
-      description: 'Realiza pagos seguros y rápidos con múltiples métodos de pago. Sin colas, sin esperas.',
+      description:
+          'Realiza pagos seguros y rápidos con múltiples métodos de pago. Sin colas, sin esperas.',
       imagePath: 'assets/images/onboarding/easy_payments.png',
       backgroundColor: AppColors.persianIndigo.withOpacity(0.1),
     ),
     OnboardingPage(
       title: 'Rastrea tus entregas',
-      description: 'Mantente informado con el seguimiento en tiempo real de todos tus pedidos desde la tienda hasta tu puerta.',
+      description:
+          'Mantente informado con el seguimiento en tiempo real de todos tus pedidos desde la tienda hasta tu puerta.',
       imagePath: 'assets/images/onboarding/track_delivery.png',
       backgroundColor: AppColors.russianViolet.withOpacity(0.1),
     ),
     OnboardingPage(
       title: 'Personaliza tu experiencia',
-      description: 'Ajusta tus preferencias, guarda tus tiendas favoritas y recibe recomendaciones personalizadas.',
+      description:
+          'Ajusta tus preferencias, guarda tus tiendas favoritas y recibe recomendaciones personalizadas.',
       imagePath: 'assets/images/onboarding/preferences.png',
       backgroundColor: AppColors.indigo.withOpacity(0.1),
     ),
@@ -119,7 +123,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                         ),
 
-                      if (_currentPage > 0) const SizedBox(width: AppTheme.spacingM),
+                      if (_currentPage > 0)
+                        const SizedBox(width: AppTheme.spacingM),
 
                       // Next/Get Started button
                       Expanded(
@@ -201,9 +206,7 @@ class _OnboardingPageWidget extends StatelessWidget {
                 color: page.backgroundColor,
                 borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
               ),
-              child: Center(
-                child: _buildIllustration(page.imagePath),
-              ),
+              child: Center(child: _buildIllustration(page.imagePath)),
             ),
           ),
 
@@ -247,7 +250,8 @@ class _OnboardingPageWidget extends StatelessWidget {
     final Map<String, IconData> illustrationIcons = {
       'assets/images/onboarding/browse_stores.png': Icons.storefront_rounded,
       'assets/images/onboarding/easy_payments.png': Icons.payment_rounded,
-      'assets/images/onboarding/track_delivery.png': Icons.local_shipping_rounded,
+      'assets/images/onboarding/track_delivery.png':
+          Icons.local_shipping_rounded,
       'assets/images/onboarding/preferences.png': Icons.tune_rounded,
     };
 

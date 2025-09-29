@@ -16,12 +16,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Buscar',
-          style: AppTypography.h3,
-        ),
-      ),
+      appBar: AppBar(title: Text('Buscar', style: AppTypography.h3)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -35,17 +30,14 @@ class _SearchScreenState extends State<SearchScreen> {
                 prefixIcon: Icon(Icons.search),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Quick Filters
-            Text(
-              'Filtros rápidos',
-              style: AppTypography.h4,
-            ),
-            
+            Text('Filtros rápidos', style: AppTypography.h4),
+
             const SizedBox(height: 16),
-            
+
             Wrap(
               spacing: 8,
               children: [
@@ -55,17 +47,14 @@ class _SearchScreenState extends State<SearchScreen> {
                 _FilterChip('Mejor valoradas'),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Recent Searches
-            Text(
-              'Búsquedas recientes',
-              style: AppTypography.h4,
-            ),
-            
+            Text('Búsquedas recientes', style: AppTypography.h4),
+
             const SizedBox(height: 16),
-            
+
             Expanded(
               child: ListView(
                 children: [
@@ -93,10 +82,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _RecentSearchItem(String search) {
     return ListTile(
       leading: const Icon(Icons.history, color: AppColors.textTertiary),
-      title: Text(
-        search,
-        style: AppTypography.bodyMedium,
-      ),
+      title: Text(search, style: AppTypography.bodyMedium),
       trailing: IconButton(
         icon: const Icon(Icons.north_west, color: AppColors.textTertiary),
         onPressed: () {

@@ -45,8 +45,8 @@ class AuthTextField extends StatelessWidget {
         prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: enabled 
-            ? AppColors.surfacePrimary 
+        fillColor: enabled
+            ? AppColors.surfacePrimary
             : AppColors.surfaceSecondary,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
@@ -54,39 +54,25 @@ class AuthTextField extends StatelessWidget {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-          borderSide: const BorderSide(
-            color: AppColors.borderColor,
-            width: 1,
-          ),
+          borderSide: const BorderSide(color: AppColors.borderColor, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-          borderSide: const BorderSide(
-            color: AppColors.focusRing,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: AppColors.focusRing, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-          borderSide: const BorderSide(
-            color: AppColors.error,
-            width: 1,
-          ),
+          borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-          borderSide: const BorderSide(
-            color: AppColors.error,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: AppColors.error, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppTheme.spacingM,
           vertical: AppTheme.spacingM + 2,
         ),
-        errorStyle: AppTypography.bodySmall.copyWith(
-          color: AppColors.error,
-        ),
+        errorStyle: AppTypography.bodySmall.copyWith(color: AppColors.error),
       ),
     );
   }

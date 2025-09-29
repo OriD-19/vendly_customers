@@ -1,9 +1,9 @@
 import '../models/store.dart';
 import '../models/product.dart';
+import '../models/promotion.dart';
 
 /// Mock data service for stores and products
 class StoreDataService {
-  
   /// Get all available stores with mock data
   static List<Store> getAllStores() {
     return [
@@ -11,7 +11,8 @@ class StoreDataService {
       Store(
         id: '1',
         name: 'Pizza Palace',
-        description: 'Las mejores pizzas artesanales de la ciudad con ingredientes frescos y masa tradicional italiana.',
+        description:
+            'Las mejores pizzas artesanales de la ciudad con ingredientes frescos y masa tradicional italiana.',
         category: 'Comida',
         logoUrl: 'assets/images/stores/pizza_palace_logo.png',
         bannerUrl: 'assets/images/stores/pizza_palace_banner.png',
@@ -72,7 +73,8 @@ class StoreDataService {
       Store(
         id: '2',
         name: 'Fresh Market',
-        description: 'Supermercado con productos frescos, orgánicos y de la mejor calidad para tu hogar.',
+        description:
+            'Supermercado con productos frescos, orgánicos y de la mejor calidad para tu hogar.',
         category: 'Supermercado',
         logoUrl: 'assets/images/stores/fresh_market_logo.png',
         bannerUrl: 'assets/images/stores/fresh_market_banner.png',
@@ -94,7 +96,8 @@ class StoreDataService {
           Product(
             id: '2_1',
             name: 'Aguacates Orgánicos',
-            description: 'Aguacates frescos y orgánicos, perfectos para ensaladas',
+            description:
+                'Aguacates frescos y orgánicos, perfectos para ensaladas',
             price: 3.99,
             imageUrl: 'assets/images/products/avocados.png',
             category: 'Frutas',
@@ -133,7 +136,8 @@ class StoreDataService {
       Store(
         id: '3',
         name: 'Style Boutique',
-        description: 'Moda contemporánea para hombres y mujeres. Las últimas tendencias al mejor precio.',
+        description:
+            'Moda contemporánea para hombres y mujeres. Las últimas tendencias al mejor precio.',
         category: 'Ropa',
         logoUrl: 'assets/images/stores/style_boutique_logo.png',
         bannerUrl: 'assets/images/stores/style_boutique_banner.png',
@@ -194,7 +198,8 @@ class StoreDataService {
       Store(
         id: '4',
         name: 'TechZone',
-        description: 'Los últimos gadgets y tecnología. Smartphones, laptops, accesorios y más.',
+        description:
+            'Los últimos gadgets y tecnología. Smartphones, laptops, accesorios y más.',
         category: 'Tecnología',
         logoUrl: 'assets/images/stores/techzone_logo.png',
         bannerUrl: 'assets/images/stores/techzone_banner.png',
@@ -216,7 +221,8 @@ class StoreDataService {
           Product(
             id: '4_1',
             name: 'Smartphone Pro',
-            description: 'Último modelo con cámara avanzada y batería de larga duración',
+            description:
+                'Último modelo con cámara avanzada y batería de larga duración',
             price: 899.99,
             imageUrl: 'assets/images/products/smartphone_pro.png',
             category: 'Smartphones',
@@ -255,7 +261,8 @@ class StoreDataService {
       Store(
         id: '5',
         name: 'Farmacia Central',
-        description: 'Tu farmacia de confianza. Medicamentos, productos de cuidado personal y salud.',
+        description:
+            'Tu farmacia de confianza. Medicamentos, productos de cuidado personal y salud.',
         category: 'Farmacia',
         logoUrl: 'assets/images/stores/farmacia_central_logo.png',
         bannerUrl: 'assets/images/stores/farmacia_central_banner.png',
@@ -326,7 +333,9 @@ class StoreDataService {
   /// Get stores by category
   static List<Store> getStoresByCategory(String category) {
     return getAllStores()
-        .where((store) => store.category.toLowerCase() == category.toLowerCase())
+        .where(
+          (store) => store.category.toLowerCase() == category.toLowerCase(),
+        )
         .toList();
   }
 
@@ -335,5 +344,100 @@ class StoreDataService {
     final stores = getAllStores();
     stores.sort((a, b) => b.rating.compareTo(a.rating));
     return stores.take(3).toList();
+  }
+
+  /// Get store promotions
+  static List<Promotion> getStorePromotions(String storeId) {
+    // Mock promotions data
+    return [
+      Promotion(
+        id: '1',
+        title: '20% OFF Todo el Menú',
+        description:
+            'Descuento especial en todos los productos hasta fin de mes',
+        imageUrl: 'assets/images/promotions/general_discount.png',
+        type: PromotionType.percentage,
+        discountPercentage: 20.0,
+        startDate: DateTime.now().subtract(const Duration(days: 5)),
+        endDate: DateTime.now().add(const Duration(days: 25)),
+        promoCode: 'SAVE20',
+      ),
+      Promotion(
+        id: '2',
+        title: 'Envío Gratis',
+        description: 'Envío gratuito en pedidos mayores a \$25',
+        imageUrl: 'assets/images/promotions/free_delivery.png',
+        type: PromotionType.freeDelivery,
+        startDate: DateTime.now().subtract(const Duration(days: 10)),
+        endDate: DateTime.now().add(const Duration(days: 20)),
+      ),
+      Promotion(
+        id: '3',
+        title: 'Combo Especial',
+        description: 'Compra 2 productos y llévate el tercero gratis',
+        imageUrl: 'assets/images/promotions/combo_deal.png',
+        type: PromotionType.buyOneGetOne,
+        startDate: DateTime.now().subtract(const Duration(days: 3)),
+        endDate: DateTime.now().add(const Duration(days: 15)),
+      ),
+    ];
+  }
+
+  /// Get all products for a store
+  static List<Product> getStoreProducts(String storeId) {
+    final store = getStoreById(storeId);
+    if (store == null) return [];
+
+    // Return featured products plus additional mock products
+    final additionalProducts = <Product>[
+      // Add more products based on store category
+      if (store.category == 'Comida') ...[
+        Product(
+          id: '${storeId}_extra_1',
+          name: 'Caesar Salad',
+          description:
+              'Lechuga fresca, crutones, queso parmesano, aderezo caesar',
+          price: 14.99,
+          imageUrl: 'assets/images/products/caesar_salad.png',
+          category: 'Ensaladas',
+          stock: 18,
+          tags: ['Saludable', 'Vegetariano'],
+        ),
+        Product(
+          id: '${storeId}_extra_2',
+          name: 'Pasta Carbonara',
+          description: 'Pasta con salsa carbonara, tocino, queso parmesano',
+          price: 16.99,
+          imageUrl: 'assets/images/products/pasta_carbonara.png',
+          category: 'Pasta',
+          stock: 12,
+          tags: ['Italiano', 'Popular'],
+        ),
+      ],
+    ];
+
+    return [...store.featuredProducts, ...additionalProducts];
+  }
+
+  /// Get product categories for a store
+  static List<ProductCategory> getStoreCategories(String storeId) {
+    final store = getStoreById(storeId);
+    if (store == null) return [];
+
+    final products = getStoreProducts(storeId);
+    final categoryNames = products.map((p) => p.category).toSet().toList();
+
+    return categoryNames.map((name) {
+      final categoryProducts = products
+          .where((p) => p.category == name)
+          .toList();
+      return ProductCategory(
+        id: name.toLowerCase().replaceAll(' ', '_'),
+        name: name,
+        description: 'Productos de $name',
+        iconName: name.toLowerCase(),
+        productCount: categoryProducts.length,
+      );
+    }).toList();
   }
 }

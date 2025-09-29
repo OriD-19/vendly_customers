@@ -30,16 +30,16 @@ class StoreRating extends StatelessWidget {
               index < rating.floor()
                   ? Icons.star
                   : index < rating
-                      ? Icons.star_half
-                      : Icons.star_border,
+                  ? Icons.star_half
+                  : Icons.star_border,
               color: Colors.amber,
               size: size,
             );
           }),
         ),
-        
+
         const SizedBox(width: 4),
-        
+
         // Rating number
         Text(
           rating.toStringAsFixed(1),
@@ -48,7 +48,7 @@ class StoreRating extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        
+
         // Review count (optional)
         if (showReviewCount) ...[
           const SizedBox(width: 4),
@@ -105,7 +105,7 @@ class StoreCategoryBadge extends StatelessWidget {
             ),
           ),
         ),
-        
+
         if (isVerified) ...[
           const SizedBox(width: 4),
           Container(
@@ -114,11 +114,7 @@ class StoreCategoryBadge extends StatelessWidget {
               color: AppColors.success,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.check,
-              color: Colors.white,
-              size: 12,
-            ),
+            child: const Icon(Icons.check, color: Colors.white, size: 12),
           ),
         ],
       ],
@@ -150,9 +146,9 @@ class StoreStatusIndicator extends StatelessWidget {
             shape: BoxShape.circle,
           ),
         ),
-        
+
         const SizedBox(width: 4),
-        
+
         // Status text
         Text(
           isOpen ? 'Abierto' : 'Cerrado',
@@ -161,9 +157,9 @@ class StoreStatusIndicator extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        
+
         const SizedBox(width: 8),
-        
+
         // Delivery info
         Expanded(
           child: Text(

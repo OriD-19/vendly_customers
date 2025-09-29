@@ -23,7 +23,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -117,7 +117,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                       color: AppColors.textTertiary,
                     ),
                     onPressed: () {
@@ -146,7 +148,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                      _obscureConfirmPassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                       color: AppColors.textTertiary,
                     ),
                     onPressed: () {
@@ -165,11 +169,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     Checkbox(
                       value: _acceptTerms,
-                      onChanged: _isLoading ? null : (value) {
-                        setState(() {
-                          _acceptTerms = value ?? false;
-                        });
-                      },
+                      onChanged: _isLoading
+                          ? null
+                          : (value) {
+                              setState(() {
+                                _acceptTerms = value ?? false;
+                              });
+                            },
                       activeColor: AppColors.persianIndigo,
                     ),
                     Expanded(
@@ -221,7 +227,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     const Expanded(child: Divider()),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacingM,
+                      ),
                       child: Text(
                         'o',
                         style: AppTypography.bodyMedium.copyWith(
@@ -256,7 +264,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: _isLoading ? null : () => context.go(AppRouter.login),
+                      onPressed: _isLoading
+                          ? null
+                          : () => context.go(AppRouter.login),
                       child: Text(
                         'Iniciar sesión',
                         style: AppTypography.bodyMedium.copyWith(
@@ -307,12 +317,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('¡Cuenta creada exitosamente! Bienvenido ${result.user?.name}'),
+              content: Text(
+                '¡Cuenta creada exitosamente! Bienvenido ${result.user?.name}',
+              ),
               backgroundColor: AppColors.success,
               behavior: SnackBarBehavior.floating,
             ),
           );
-          
+
           // Navigate to home
           context.go(AppRouter.home);
         } else {
@@ -361,7 +373,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      
+
       context.go(AppRouter.home);
     }
 

@@ -4,17 +4,14 @@ import '../core/router/app_router.dart';
 
 /// Main scaffold with bottom navigation for the app
 class MainScaffold extends StatelessWidget {
-  const MainScaffold({
-    super.key,
-    required this.child,
-  });
+  const MainScaffold({super.key, required this.child});
 
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
-    
+
     return Scaffold(
       body: child,
       bottomNavigationBar: BottomNavigationBar(

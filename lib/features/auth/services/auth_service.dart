@@ -68,11 +68,7 @@ class AuthResult {
   final User? user;
   final String? error;
 
-  AuthResult({
-    required this.success,
-    this.user,
-    this.error,
-  });
+  AuthResult({required this.success, this.user, this.error});
 }
 
 /// User model
@@ -81,9 +77,5 @@ class User {
   final String name;
   final String email;
 
-  User({
-    required this.id,
-    required this.name,
-    required this.email,
-  });
+  User({required this.id, required this.name, required this.email});
 }

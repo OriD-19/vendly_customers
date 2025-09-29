@@ -5,11 +5,7 @@ import '../models/product.dart';
 
 /// Product carousel widget for store cards
 class ProductCarousel extends StatefulWidget {
-  const ProductCarousel({
-    super.key,
-    required this.products,
-    this.height = 160,
-  });
+  const ProductCarousel({super.key, required this.products, this.height = 160});
 
   final List<Product> products;
   final double height;
@@ -120,10 +116,7 @@ class _ProductCarouselState extends State<ProductCarousel> {
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.6),
-                    Colors.transparent,
-                  ],
+                  colors: [Colors.black.withOpacity(0.6), Colors.transparent],
                 ),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(AppTheme.borderRadiusLarge),
@@ -144,12 +137,7 @@ class _ProductCarouselState extends State<ProductCarousel> {
                 color: Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                shadows: [
-                  Shadow(
-                    color: Colors.black45,
-                    blurRadius: 4,
-                  ),
-                ],
+                shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -196,9 +184,7 @@ class _ProductCarouselState extends State<ProductCarousel> {
       width: isActive ? 16 : 6,
       height: 6,
       decoration: BoxDecoration(
-        color: isActive 
-            ? Colors.white 
-            : Colors.white.withOpacity(0.5),
+        color: isActive ? Colors.white : Colors.white.withOpacity(0.5),
         borderRadius: BorderRadius.circular(3),
         boxShadow: [
           BoxShadow(
@@ -233,10 +219,7 @@ class _ProductCarouselState extends State<ProductCarousel> {
             SizedBox(height: AppTheme.spacingS),
             Text(
               'No hay productos destacados',
-              style: TextStyle(
-                color: AppColors.textTertiary,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppColors.textTertiary, fontSize: 14),
             ),
           ],
         ),

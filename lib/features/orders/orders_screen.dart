@@ -9,12 +9,7 @@ class OrdersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Pedidos',
-          style: AppTypography.h3,
-        ),
-      ),
+      appBar: AppBar(title: Text('Pedidos', style: AppTypography.h3)),
       body: DefaultTabController(
         length: 2,
         child: Column(
@@ -26,14 +21,14 @@ class OrdersScreen extends StatelessWidget {
                 Tab(text: 'Historial'),
               ],
             ),
-            
+
             // Tab Views
             Expanded(
               child: TabBarView(
                 children: [
                   // Active Orders Tab
                   _ActiveOrdersTab(),
-                  
+
                   // Order History Tab
                   _OrderHistoryTab(),
                 ],
@@ -61,9 +56,9 @@ class _ActiveOrdersTab extends StatelessWidget {
           total: '\$25.99',
           estimatedTime: '25 min',
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         _OrderCard(
           orderId: '#12344',
           storeName: 'Farmacia Central',
@@ -93,9 +88,9 @@ class _OrderHistoryTab extends StatelessWidget {
           total: '\$18.75',
           deliveredDate: 'Ayer, 3:30 PM',
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         _OrderCard(
           orderId: '#12342',
           storeName: 'Fashion Store',
@@ -152,10 +147,7 @@ class _OrderCard extends StatelessWidget {
                         color: AppColors.textTertiary,
                       ),
                     ),
-                    Text(
-                      storeName,
-                      style: AppTypography.h4,
-                    ),
+                    Text(storeName, style: AppTypography.h4),
                   ],
                 ),
                 Container(
@@ -177,9 +169,9 @@ class _OrderCard extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Items
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,9 +187,9 @@ class _OrderCard extends StatelessWidget {
                 );
               }).toList(),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Footer
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -224,7 +216,7 @@ class _OrderCard extends StatelessWidget {
                   ),
               ],
             ),
-            
+
             // Action buttons for active orders
             if (estimatedTime != null) ...[
               const SizedBox(height: 12),

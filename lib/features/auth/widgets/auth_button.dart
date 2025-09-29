@@ -54,10 +54,7 @@ class AuthButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: isLoading ? null : onPressed,
           style: OutlinedButton.styleFrom(
-            side: const BorderSide(
-              color: AppColors.persianIndigo,
-              width: 2,
-            ),
+            side: const BorderSide(color: AppColors.persianIndigo, width: 2),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppTheme.borderRadiusXLarge),
             ),

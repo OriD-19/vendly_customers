@@ -8,11 +8,7 @@ import 'store_info_widgets.dart';
 
 /// Beautiful store card component displaying featured products and store info
 class StoreCard extends StatelessWidget {
-  const StoreCard({
-    super.key,
-    required this.store,
-    this.onTap,
-  });
+  const StoreCard({super.key, required this.store, this.onTap});
 
   final Store store;
   final VoidCallback? onTap;
@@ -36,11 +32,8 @@ class StoreCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Top half - Product Carousel
-            ProductCarousel(
-              products: store.carouselProducts,
-              height: 160,
-            ),
-            
+            ProductCarousel(products: store.carouselProducts, height: 160),
+
             // Bottom half - Store Information
             Padding(
               padding: const EdgeInsets.all(AppTheme.spacingM),
@@ -64,9 +57,9 @@ class StoreCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            
+
                             const SizedBox(height: 4),
-                            
+
                             StoreCategoryBadge(
                               category: store.category,
                               isVerified: store.isVerified,
@@ -74,16 +67,18 @@ class StoreCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(width: AppTheme.spacingS),
-                      
+
                       // Store logo placeholder
                       Container(
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
                           color: AppColors.persianIndigo.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppTheme.borderRadiusSmall),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.borderRadiusSmall,
+                          ),
                         ),
                         child: Icon(
                           _getStoreIcon(store.category),
@@ -93,9 +88,9 @@ class StoreCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: AppTheme.spacingS),
-                  
+
                   // Store description
                   Text(
                     store.description,
@@ -105,26 +100,26 @@ class StoreCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
+
                   const SizedBox(height: AppTheme.spacingS),
-                  
+
                   // Rating
                   StoreRating(
                     rating: store.rating,
                     reviewCount: store.reviewCount,
                     showReviewCount: true,
                   ),
-                  
+
                   const SizedBox(height: AppTheme.spacingS),
-                  
+
                   // Status and delivery info
                   StoreStatusIndicator(
                     isOpen: store.isOpen,
                     deliveryInfo: store.deliveryInfo,
                   ),
-                  
+
                   const SizedBox(height: AppTheme.spacingS),
-                  
+
                   // Tags
                   if (store.tags.isNotEmpty)
                     Wrap(
@@ -245,7 +240,7 @@ class StoreCardCompact extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // Store info
               Padding(
                 padding: const EdgeInsets.all(AppTheme.spacingS),
@@ -260,18 +255,18 @@ class StoreCardCompact extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     const SizedBox(height: 2),
-                    
+
                     Text(
                       store.category,
                       style: AppTypography.caption.copyWith(
                         color: AppColors.textTertiary,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 4),
-                    
+
                     StoreRating(
                       rating: store.rating,
                       reviewCount: store.reviewCount,

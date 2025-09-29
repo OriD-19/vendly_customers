@@ -46,16 +46,16 @@ class Store {
   String get formattedRating => rating.toStringAsFixed(1);
 
   /// Get review count text
-  String get reviewText => reviewCount == 1 ? '1 reseña' : '$reviewCount reseñas';
+  String get reviewText =>
+      reviewCount == 1 ? '1 reseña' : '$reviewCount reseñas';
 
   /// Get delivery info text
-  String get deliveryInfo => deliveryFee == 0 
-      ? 'Envío gratis • $estimatedDeliveryTime min' 
+  String get deliveryInfo => deliveryFee == 0
+      ? 'Envío gratis • $estimatedDeliveryTime min'
       : '\$${deliveryFee.toStringAsFixed(2)} • $estimatedDeliveryTime min';
 
   /// Get up to 3 featured products for carousel
-  List<Product> get carouselProducts => 
-      featuredProducts.take(3).toList();
+  List<Product> get carouselProducts => featuredProducts.take(3).toList();
 }
 
 /// Store operating hours
