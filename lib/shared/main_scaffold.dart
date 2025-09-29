@@ -56,10 +56,8 @@ class MainScaffold extends StatelessWidget {
         return 0;
       case '/search':
         return 1;
-      case '/cart':
-        return 2;
       case '/orders':
-        return 3;
+        return 3; // Orders moved to index 3
       default:
         return 0;
     }

@@ -26,6 +26,11 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: login,
     debugLogDiagnostics: true,
+    onException: (context, state, router) {
+      print('GoRouter Exception: ${state.error}');
+      // Navigate to home as fallback
+      router.go(home);
+    },
     routes: [
       // Authentication Routes
       GoRoute(path: login, builder: (context, state) => const LoginScreen()),
@@ -51,6 +56,14 @@ class AppRouter {
         ),
       ),
 
+
+
+      // Cart route (outside shell for direct access)
+      GoRoute(
+        path: cart,
+        builder: (context, state) => const CartScreen(),
+      ),
+
       // Main App Shell with Bottom Navigation
       ShellRoute(
         builder: (context, state, child) {
@@ -65,10 +78,6 @@ class AppRouter {
           GoRoute(
             path: orders,
             builder: (context, state) => const OrdersScreen(),
-          ),
-          GoRoute(
-            path: cart,
-            builder: (context, state) => const CartScreen(),
           ),
         ],
       ),
