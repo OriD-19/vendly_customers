@@ -292,7 +292,7 @@ class _FeaturedTab extends StatelessWidget {
               product: product,
               showBestSellerBadge: true,
               onTap: () {
-                context.go('/store/${store.id}/product/${product.id}');
+                context.push('/store/${store.id}/product/${product.id}');
               },
             );
           }),
@@ -341,7 +341,7 @@ class _CatalogueTab extends StatelessWidget {
                   return ProductListItem(
                     product: product, 
                     onTap: () {
-                      context.go('/store/${store.id}/product/${product.id}');
+                      context.push('/store/${store.id}/product/${product.id}');
                     },
                   );
                 }),

@@ -20,9 +20,6 @@ dependencies:
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
   
-  # Animations
-  lottie: ^3.1.2
-  
   # Utilities
   shared_preferences: ^2.3.2
 
@@ -43,7 +40,6 @@ flutter:
     - assets/images/icons/
     - assets/images/onboarding/
     - assets/images/placeholders/
-    - assets/animations/
     - assets/icons/
 
 flutter_launcher_icons:
