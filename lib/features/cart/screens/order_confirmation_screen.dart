@@ -80,11 +80,11 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
     return Scaffold(
       backgroundColor: AppColors.aliceBlue,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Expanded(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -198,9 +198,12 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
                   ],
                 ),
               ),
+            ),
 
-              // Action buttons
-              FadeTransition(
+            // Action buttons - Fixed at bottom
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: Column(
                   children: [
@@ -279,8 +282,8 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
