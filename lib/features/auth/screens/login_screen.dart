@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/router/app_router.dart';
+import '../../../shared/widgets/vendly_logo.dart';
 import '../services/auth_service.dart';
 import '../services/validation_utils.dart';
 import '../widgets/auth_text_field.dart';
@@ -41,12 +42,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Vendly Logo/Title
                 Center(
-                  child: Text(
-                    'Vendly',
-                    style: AppTypography.h1.copyWith(
-                      color: AppColors.persianIndigo,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: VendlyLogo(
+                    height: 60,
+                    color: AppColors.persianIndigo,
                   ),
                 ),
 

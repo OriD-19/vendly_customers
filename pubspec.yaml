@@ -31,6 +31,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   riverpod_lint: ^2.3.13
+  flutter_launcher_icons: ^0.14.1
 
 flutter:
   uses-material-design: true
@@ -43,3 +44,23 @@ flutter:
     - assets/images/onboarding/
     - assets/images/placeholders/
     - assets/animations/
+    - assets/icons/
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icons/logo.png"
+  remove_alpha_ios: true
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  web:
+    generate: true
+    image_path: "assets/icons/logo.png"
+    background_color: "#461282"
+    theme_color: "#461282"
+  windows:
+    generate: true
+    image_path: "assets/icons/logo.png"
+    icon_size: 48 # min:48, max:256, default: 48
+  macos:
+    generate: true
+    image_path: "assets/icons/logo.png"

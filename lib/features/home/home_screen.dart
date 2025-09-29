@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../shared/widgets/vendly_logo.dart';
 import '../stores/services/store_data_service.dart';
 import '../stores/widgets/store_card.dart';
 
@@ -15,12 +16,9 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            Text(
-              'Vendly',
-              style: AppTypography.h3.copyWith(
-                color: AppColors.persianIndigo,
-                fontWeight: FontWeight.bold,
-              ),
+            VendlyLogo(
+              height: 32,
+              color: AppColors.persianIndigo,
             ),
             const Spacer(),
             IconButton(
