@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../stores/services/store_data_service.dart';
+import '../stores/widgets/store_card.dart';
 
 /// Home screen - Main landing page
 class HomeScreen extends StatelessWidget {
@@ -31,28 +33,65 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+      body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Welcome Section
-            _WelcomeSection(),
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: _WelcomeSection(),
+            ),
             
-            SizedBox(height: 24),
+            const SizedBox(height: 8),
             
             // Categories Section
-            _CategoriesSection(),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: _CategoriesSection(),
+            ),
             
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             
-            // Featured Stores
-            _FeaturedStoresSection(),
+            // Featured Stores Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Tiendas destacadas',
+                    style: AppTypography.h3.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: Text(
+                      'Ver todas',
+                      style: AppTypography.labelMedium.copyWith(
+                        color: AppColors.persianIndigo,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             
-            SizedBox(height: 24),
+            const SizedBox(height: 8),
+            
+            // Store Cards List
+            _StoresList(),
+            
+            const SizedBox(height: 24),
             
             // Promotions
-            _PromotionsSection(),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: _PromotionsSection(),
+            ),
+            
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -145,71 +184,29 @@ class _CategoriesSection extends StatelessWidget {
   }
 }
 
-class _FeaturedStoresSection extends StatelessWidget {
-  const _FeaturedStoresSection();
-
+class _StoresList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Tiendas destacadas',
-              style: AppTypography.h3,
-            ),
-            TextButton(
-              onPressed: () {},
-              child: Text(
-                'Ver todas',
-                style: AppTypography.labelMedium.copyWith(
-                  color: AppColors.persianIndigo,
-                ),
+    final stores = StoreDataService.getAllStores();
+    
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: stores.length,
+      itemBuilder: (context, index) {
+        return StoreCard(
+          store: stores[index],
+          onTap: () {
+            // TODO: Navigate to store detail page
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Navegando a ${stores[index].name}'),
+                behavior: SnackBarBehavior.floating,
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 5,
-            itemBuilder: (context, index) {
-              return Container(
-                width: 100,
-                margin: const EdgeInsets.only(right: 16),
-                child: Column(
-                  children: [
-                    Container(
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.store,
-                          size: 32,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Tienda ${index + 1}',
-                      style: AppTypography.labelSmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+            );
+          },
+        );
+      },
     );
   }
 }
