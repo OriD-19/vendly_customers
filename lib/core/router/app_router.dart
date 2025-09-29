@@ -9,6 +9,9 @@ import '../../features/orders/orders_screen.dart';
 import '../../features/stores/screens/store_detail_screen.dart';
 import '../../features/stores/screens/product_detail_screen.dart';
 import '../../features/cart/screens/cart_screen.dart';
+import '../../features/cart/screens/checkout_screen.dart';
+import '../../features/cart/screens/order_confirmation_screen.dart';
+import '../../features/cart/models/cart.dart';
 import '../../shared/main_scaffold.dart';
 
 /// App routing configuration using GoRouter
@@ -62,6 +65,22 @@ class AppRouter {
       GoRoute(
         path: cart,
         builder: (context, state) => const CartScreen(),
+      ),
+
+      // Checkout routes
+      GoRoute(
+        path: '/checkout',
+        builder: (context, state) {
+          // Get cart from extra data or create empty cart as fallback
+          final cart = state.extra as Cart? ?? Cart(items: []);
+          return CheckoutScreen(cart: cart);
+        },
+        routes: [
+          GoRoute(
+            path: 'confirmation',
+            builder: (context, state) => const OrderConfirmationScreen(),
+          ),
+        ],
       ),
 
       // Main App Shell with Bottom Navigation

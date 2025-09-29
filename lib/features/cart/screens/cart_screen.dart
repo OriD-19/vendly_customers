@@ -74,18 +74,8 @@ class _CartScreenState extends State<CartScreen> {
 
   /// Handle checkout action
   void _handleCheckout() {
-    // TODO: Navigate to checkout screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Procesando pedido...'),
-        backgroundColor: AppColors.persianIndigo,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-        ),
-        margin: const EdgeInsets.all(16),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    // Navigate to checkout screen with current cart
+    context.push('/checkout', extra: _cart);
   }
 
   @override
