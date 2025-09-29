@@ -87,7 +87,7 @@ class _CartScreenState extends State<CartScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(
-            Icons.arrow_back_ios,
+            Icons.arrow_back,
             color: AppColors.russianViolet,
           ),
           onPressed: () => context.pop(),

@@ -37,10 +37,7 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Welcome Section
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: _WelcomeSection(),
-            ),
+            const _WelcomeSection(),
 
             const SizedBox(height: 8),
 
@@ -136,6 +133,8 @@ class _WelcomeSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient,
@@ -217,35 +216,44 @@ class _StoresList extends StatelessWidget {
   Widget build(BuildContext context) {
     final stores = StoreDataService.getAllStores();
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: stores.length,
-      itemBuilder: (context, index) {
-        return StoreCard(
-          store: stores[index],
-          onTap: () {
-            final storeId = stores[index].id;
-            final route = '/store/$storeId';
-            try {
-              // Try using context.pushNamed with named route
-              context.pushNamed('store-detail', pathParameters: {'storeId': storeId});
-            } catch (e) {
-              // Fallback to context.go()
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 600, // Max width per item
+          mainAxisExtent: 380,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: stores.length,
+        itemBuilder: (context, index) {
+          return StoreCard(
+            store: stores[index],
+            onTap: () {
+              final storeId = stores[index].id;
+              final route = '/store/$storeId';
               try {
-                context.go(route);
-              } catch (e2) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error al navegar a la tienda: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                // Try using context.pushNamed with named route
+                context.pushNamed('store-detail', pathParameters: {'storeId': storeId});
+              } catch (e) {
+                // Fallback to context.push()
+                try {
+                  context.push(route);
+                } catch (e2) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error al navegar a la tienda: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
-            }
-          },
-        );
-      },
+            },
+          );
+        },
+      ),
     );
   }
 }

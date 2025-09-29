@@ -66,16 +66,16 @@ class MainScaffold extends StatelessWidget {
   void _onItemTapped(int index, BuildContext context) {
     switch (index) {
       case 0:
-        GoRouter.of(context).go(AppRouter.home);
+        GoRouter.of(context).push(AppRouter.home);
         break;
       case 1:
-        GoRouter.of(context).go(AppRouter.search);
+        GoRouter.of(context).push(AppRouter.search);
         break;
       case 2:
-        GoRouter.of(context).go(AppRouter.cart);
+        GoRouter.of(context).push(AppRouter.cart);
         break;
       case 3:
-        GoRouter.of(context).go(AppRouter.orders);
+        GoRouter.of(context).push(AppRouter.orders);
         break;
     }
   }

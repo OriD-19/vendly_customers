@@ -30,43 +30,33 @@ class AppRouter {
     initialLocation: login,
     debugLogDiagnostics: true,
     onException: (context, state, router) {
-      // Navigate to home as fallback
+      // navigate to home as fallback
       router.go(home);
     },
     routes: [
-      // Authentication Routes
+      // authentication routes
       GoRoute(path: login, builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: register,
         builder: (context, state) => const RegisterScreen(),
       ),
 
-      // Onboarding Route
+      // onboarding route
       GoRoute(
         path: onboarding,
         builder: (context, state) => const OnboardingScreen(),
       ),
 
-      // Debug test route
+      // debug test route
       GoRoute(
         path: '/test',
         builder: (context, state) => Scaffold(
           appBar: AppBar(title: const Text('Test Route')),
-          body: const Center(
-            child: Text('Test route works!'),
-          ),
+          body: const Center(child: Text('Test route works!')),
         ),
       ),
 
-
-
-      // Cart route (outside shell for direct access)
-      GoRoute(
-        path: cart,
-        builder: (context, state) => const CartScreen(),
-      ),
-
-      // Checkout routes
+      // checkout routes
       GoRoute(
         path: '/checkout',
         builder: (context, state) {
@@ -82,7 +72,7 @@ class AppRouter {
         ],
       ),
 
-      // Main App Shell with Bottom Navigation
+      // main app shell with bottom navigation
       ShellRoute(
         builder: (context, state, child) {
           return MainScaffold(child: child);
@@ -97,22 +87,24 @@ class AppRouter {
             path: orders,
             builder: (context, state) => const OrdersScreen(),
           ),
+          // cart route
+          GoRoute(path: cart, builder: (context, state) => const CartScreen()),
         ],
       ),
 
-      // Store Detail Route (outside shell for proper navigation stack)
+      // store detail route (outside shell for proper navigation stack)
       GoRoute(
         name: 'store-detail',
         path: '/store/:storeId',
         builder: (context, state) {
           final storeId = state.pathParameters['storeId'];
-          
+
           if (storeId == null) {
             return const Scaffold(
               body: Center(child: Text('Store ID is required')),
             );
           }
-          
+
           return StoreDetailScreen(storeId: storeId);
         },
         routes: [
@@ -129,7 +121,7 @@ class AppRouter {
                   body: Center(child: Text('Product ID is required')),
                 );
               }
-              
+
               return ProductDetailScreen(productId: productId);
             },
           ),
