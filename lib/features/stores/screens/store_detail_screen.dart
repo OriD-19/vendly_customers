@@ -245,8 +245,6 @@ class _FeaturedTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final promotions = StoreDataService.getStorePromotions(store.id);
     final popularItems = store.featuredProducts;
-    
-    print('Store ${store.id}: Found ${promotions.length} promotions'); // Debug
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -272,8 +270,7 @@ class _FeaturedTab extends StatelessWidget {
                     child: PromotionCard(
                       promotion: promotions[index],
                       onTap: () {
-                        // TODO: Handle promotion tap
-                        print('Tapped promotion: ${promotions[index].title}');
+                        // TODO: Handle tap
                       },
                     ),
                   );

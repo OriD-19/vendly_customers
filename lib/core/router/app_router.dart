@@ -30,7 +30,6 @@ class AppRouter {
     initialLocation: login,
     debugLogDiagnostics: true,
     onException: (context, state, router) {
-      print('GoRouter Exception: ${state.error}');
       // Navigate to home as fallback
       router.go(home);
     },
@@ -107,7 +106,6 @@ class AppRouter {
         path: '/store/:storeId',
         builder: (context, state) {
           final storeId = state.pathParameters['storeId'];
-          print('Building StoreDetailScreen for storeId: $storeId'); // Debug log
           
           if (storeId == null) {
             return const Scaffold(
@@ -125,8 +123,7 @@ class AppRouter {
             builder: (context, state) {
               final productId = state.pathParameters['productId'];
               final storeId = state.pathParameters['storeId'];
-              print('Building ProductDetailScreen for productId: $productId, storeId: $storeId'); // Debug log
-              
+
               if (productId == null) {
                 return const Scaffold(
                   body: Center(child: Text('Product ID is required')),

@@ -90,11 +90,9 @@ class HomeScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        print('Testing navigation to /test');
                         try {
                           context.push('/test');
                         } catch (e) {
-                          print('Test route error: $e');
                         }
                       },
                       child: const Text('Test /test Route'),
@@ -104,11 +102,9 @@ class HomeScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        print('Testing navigation to /store/1');
                         try {
                           context.push('/store/1');
                         } catch (e) {
-                          print('Store route error: $e');
                         }
                       },
                       child: const Text('Test Store Route'),
@@ -231,18 +227,14 @@ class _StoresList extends StatelessWidget {
           onTap: () {
             final storeId = stores[index].id;
             final route = '/store/$storeId';
-            print('Navigating to: $route'); // Debug log
-            
             try {
               // Try using context.pushNamed with named route
               context.pushNamed('store-detail', pathParameters: {'storeId': storeId});
             } catch (e) {
-              print('Navigation error: $e'); // Debug log
               // Fallback to context.go()
               try {
                 context.go(route);
               } catch (e2) {
-                print('Fallback navigation error: $e2');
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Error al navegar a la tienda: $e'),
