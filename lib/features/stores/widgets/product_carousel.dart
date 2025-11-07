@@ -24,7 +24,7 @@ class ProductCarousel extends StatefulWidget {
 }
 
 class _ProductCarouselState extends State<ProductCarousel> {
-  final PageController _pageController = PageController();
+  final PageController _pageController = PageController(); // for the carousel swipe functionality
   int _currentPage = 0;
 
   @override

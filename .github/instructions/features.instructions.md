@@ -9,6 +9,15 @@ Also, keep in mind that the current list is NOT going to be integrated all at on
 Right now, we are focusing on producing a high fidelity prototype that can be used fully through the UI.
 So, in other words, we are trying to validate the interface, user experience, and ease of use of the application with the current design.
 
+## Required libraries and Flutter stack
+- Flutter SDK (latest stable version)
+- State Management: Riverpod / Cubit
+- HTTP Client: Dio 
+- Local Storage: Shared Preferences
+- Image Caching: Cached Network Image
+- Navigation: GoRouter
+- Form Validation: Formz / Bloc
+
 ## Functional Requirements
 ### Store & Product Discovery
 - Display list of registered stores with basic information
