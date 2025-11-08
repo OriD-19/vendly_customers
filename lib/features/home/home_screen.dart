@@ -6,6 +6,8 @@ import '../../shared/widgets/vendly_logo.dart';
 import '../stores/services/store_service.dart';
 import '../stores/models/store.dart';
 import '../stores/widgets/store_card.dart';
+import '../categories/services/category_service.dart';
+import '../categories/models/category.dart';
 import 'widgets/account_drawer.dart';
 
 /// Home screen - Main landing page
@@ -139,49 +141,193 @@ class _WelcomeSection extends StatelessWidget {
   }
 }
 
-class _CategoriesSection extends StatelessWidget {
+class _CategoriesSection extends StatefulWidget {
   const _CategoriesSection();
 
   @override
-  Widget build(BuildContext context) {
-    final categories = [
-      {'icon': Icons.restaurant, 'name': 'Comida'},
-      {'icon': Icons.local_grocery_store, 'name': 'Market'},
-      {'icon': Icons.local_pharmacy, 'name': 'Farmacia'},
-      {'icon': Icons.checkroom, 'name': 'Ropa'},
-    ];
+  State<_CategoriesSection> createState() => _CategoriesSectionState();
+}
 
+class _CategoriesSectionState extends State<_CategoriesSection> {
+  bool _isLoading = false;
+  List<Category> _categories = [];
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final result = await CategoryService.getTopCategories(
+        limit: 5,
+        sortBy: 'count',
+        sortOrder: 'desc',
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          if (result.success) {
+            _categories = result.categories;
+          } else {
+            _error = result.error ?? 'Error al cargar categorías';
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Error de conexión: ${e.toString()}';
+        });
+      }
+    }
+  }
+
+  IconData _getIconData(String iconName) {
+    switch (iconName) {
+      case 'restaurant':
+        return Icons.restaurant;
+      case 'local_grocery_store':
+        return Icons.local_grocery_store;
+      case 'local_pharmacy':
+        return Icons.local_pharmacy;
+      case 'checkroom':
+        return Icons.checkroom;
+      case 'devices':
+        return Icons.devices;
+      case 'sports_soccer':
+        return Icons.sports_soccer;
+      case 'home':
+        return Icons.home;
+      case 'local_bar':
+        return Icons.local_bar;
+      case 'category':
+      default:
+        return Icons.category;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Categorías', style: AppTypography.h3),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: categories.map((category) {
-            return Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.mauve.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    category['icon'] as IconData,
-                    color: AppColors.persianIndigo,
+        if (_isLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (_error != null)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.error_outline,
                     size: 32,
+                    color: AppColors.error,
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _error!,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: _loadCategories,
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (_categories.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'No hay categorías disponibles',
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  category['name'] as String,
-                  style: AppTypography.labelSmall,
-                ),
-              ],
-            );
-          }).toList(),
-        ),
+              ),
+            ),
+          )
+        else
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _categories.asMap().entries.map((entry) {
+                final index = entry.key;
+                final category = entry.value;
+                final iconName = category.getIconName();
+                final icon = _getIconData(iconName);
+
+                return Padding(
+                  padding: EdgeInsets.only(
+                    right: index < _categories.length - 1 ? 16 : 0,
+                  ),
+                  child: GestureDetector(
+                    onTap: () {
+                      // TODO: Navigate to category products screen
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Categoría: ${category.name} (${category.productCount} productos)',
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.mauve.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            icon,
+                            color: AppColors.persianIndigo,
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            category.name,
+                            style: AppTypography.labelSmall,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
       ],
     );
   }

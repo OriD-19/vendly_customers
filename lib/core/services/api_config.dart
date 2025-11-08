@@ -54,4 +54,10 @@ class ApiConfig {
   static const String stores = '/stores';
   static String storeById(int id) => '/stores/$id';
   static String storeProducts(int id) => '/stores/$id/products';
+
+  // Categories endpoints
+  static const String categories = '/categories';
+  static const String categoriesWithCounts = '/categories/all/with-counts';
+  static String categoryById(int id) => '/categories/$id';
+  static String categoryProducts(int id) => '/categories/$id/products';
 }
