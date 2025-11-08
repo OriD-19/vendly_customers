@@ -20,6 +20,12 @@ class Store {
   final bool isVerified;
   final double deliveryFee;
   final int estimatedDeliveryTime; // in minutes
+  final List<String> showcaseImages; // NEW: Image carousel URLs from API
+  final int? ownerId; // NEW: Owner ID from API
+  final DateTime? createdAt; // NEW: Creation timestamp from API
+  final DateTime? updatedAt; // NEW: Update timestamp from API
+  final String? storeLocation; // NEW: Location from API
+  final String? type; // NEW: Store type from API
 
   const Store({
     required this.id,
@@ -40,7 +46,101 @@ class Store {
     this.isVerified = false,
     this.deliveryFee = 0.0,
     this.estimatedDeliveryTime = 30,
+    this.showcaseImages = const [],
+    this.ownerId,
+    this.createdAt,
+    this.updatedAt,
+    this.storeLocation,
+    this.type,
   });
+
+  /// Create Store from API JSON response
+  factory Store.fromJson(Map<String, dynamic> json) {
+    return Store(
+      id: json['id'].toString(),
+      name: json['name'] ?? 'Tienda sin nombre',
+      description: json['description'] ?? 'Sin descripción',
+      category: json['type'] ?? 'General',
+      logoUrl: json['profile_image'] ?? '',
+      bannerUrl: (json['showcase_images'] as List<dynamic>?)?.isNotEmpty == true
+          ? json['showcase_images'][0]
+          : '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 4.0,
+      reviewCount: json['review_count'] ?? 0,
+      address: json['store_location'] ?? 'Dirección no disponible',
+      phone: json['phone'] ?? '',
+      email: json['email'] ?? '',
+      hours: const StoreHours(
+        monday: '9:00 AM - 6:00 PM',
+        tuesday: '9:00 AM - 6:00 PM',
+        wednesday: '9:00 AM - 6:00 PM',
+        thursday: '9:00 AM - 6:00 PM',
+        friday: '9:00 AM - 6:00 PM',
+        saturday: '10:00 AM - 4:00 PM',
+        sunday: 'Cerrado',
+      ),
+      featuredProducts: const [],
+      tags: _extractTags(json),
+      isOpen: json['is_open'] ?? true,
+      isVerified: json['is_verified'] ?? false,
+      deliveryFee: (json['delivery_fee'] as num?)?.toDouble() ?? 0.0,
+      estimatedDeliveryTime: json['estimated_delivery_time'] ?? 30,
+      showcaseImages: (json['showcase_images'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      ownerId: json['owner_id'],
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'])
+          : null,
+      storeLocation: json['store_location'],
+      type: json['type'],
+    );
+  }
+
+  /// Convert Store to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'type': type ?? category,
+      'profile_image': logoUrl,
+      'showcase_images': showcaseImages,
+      'rating': rating,
+      'review_count': reviewCount,
+      'store_location': storeLocation ?? address,
+      'phone': phone,
+      'email': email,
+      'is_open': isOpen,
+      'is_verified': isVerified,
+      'delivery_fee': deliveryFee,
+      'estimated_delivery_time': estimatedDeliveryTime,
+      'owner_id': ownerId,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+    };
+  }
+
+  /// Extract tags from JSON (helper method)
+  static List<String> _extractTags(Map<String, dynamic> json) {
+    final tags = <String>[];
+    
+    // Add category/type as tag
+    if (json['type'] != null) tags.add(json['type']);
+    
+    // Add delivery option tag
+    final deliveryFee = (json['delivery_fee'] as num?)?.toDouble() ?? 0.0;
+    if (deliveryFee == 0.0) tags.add('Envío gratis');
+    
+    // Add verified tag
+    if (json['is_verified'] == true) tags.add('Verificado');
+    
+    return tags;
+  }
 
   /// Get formatted rating string
   String get formattedRating => rating.toStringAsFixed(1);
@@ -56,6 +156,15 @@ class Store {
 
   /// Get up to 3 featured products for carousel
   List<Product> get carouselProducts => featuredProducts.take(3).toList();
+
+  /// Get showcase images for carousel (use showcase images or fallback to banner)
+  List<String> get carouselImages {
+    if (showcaseImages.isNotEmpty) {
+      return showcaseImages;
+    }
+    // Fallback to banner if no showcase images
+    return bannerUrl.isNotEmpty ? [bannerUrl] : [];
+  }
 }
 
 /// Store operating hours

@@ -318,7 +318,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '¡Cuenta creada exitosamente! Bienvenido ${result.user?.name}',
+                '¡Cuenta creada exitosamente! Bienvenido ${result.user?.username ?? result.user?.email}',
               ),
               backgroundColor: AppColors.success,
               behavior: SnackBarBehavior.floating,

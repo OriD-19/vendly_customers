@@ -76,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Email Field
                 AuthTextField(
                   controller: _emailController,
-                  hintText: 'Email o Usuario',
+                  hintText: 'Usuario',
                   keyboardType: TextInputType.emailAddress,
                   validator: ValidationUtils.validateEmail,
                   enabled: !_isLoading,
@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('¡Bienvenido ${result.user?.name ?? 'Usuario'}!'),
+              content: Text('¡Bienvenido ${result.user?.username ?? result.user?.email ?? 'Usuario'}!'),
               backgroundColor: AppColors.success,
               behavior: SnackBarBehavior.floating,
             ),

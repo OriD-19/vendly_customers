@@ -3,8 +3,10 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/vendly_logo.dart';
-import '../stores/services/store_data_service.dart';
+import '../stores/services/store_service.dart';
+import '../stores/models/store.dart';
 import '../stores/widgets/store_card.dart';
+import 'widgets/account_drawer.dart';
 
 /// Home screen - Main landing page
 class HomeScreen extends StatelessWidget {
@@ -25,13 +27,21 @@ class HomeScreen extends StatelessWidget {
               onPressed: () {},
               icon: const Icon(Icons.notifications_outlined),
             ),
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.account_circle_outlined),
-            ),
           ],
         ),
+        actions: [
+          Builder(
+            builder: (context) => IconButton(
+              onPressed: () {
+                Scaffold.of(context).openEndDrawer();
+              },
+              icon: const Icon(Icons.account_circle_outlined),
+              tooltip: 'Mi cuenta',
+            ),
+          ),
+        ],
       ),
+      endDrawer: const AccountDrawer(),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,10 +221,105 @@ class _CategoriesSection extends StatelessWidget {
   }
 }
 
-class _StoresList extends StatelessWidget {
+class _StoresList extends StatefulWidget {
+  @override
+  State<_StoresList> createState() => _StoresListState();
+}
+
+class _StoresListState extends State<_StoresList> {
+  bool _isLoading = false;
+  List<Store> _stores = [];
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStores();
+  }
+
+  Future<void> _loadStores() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final result = await StoreService.getAllStores();
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          if (result.success) {
+            _stores = result.stores;
+          } else {
+            _error = result.error ?? 'Error al cargar tiendas';
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Error de conexión: ${e.toString()}';
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final stores = StoreDataService.getAllStores();
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(32.0),
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppColors.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _error!,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadStores,
+                child: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_stores.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Center(
+          child: Text(
+            'No hay tiendas disponibles',
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -227,12 +332,12 @@ class _StoresList extends StatelessWidget {
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
         ),
-        itemCount: stores.length,
+        itemCount: _stores.length,
         itemBuilder: (context, index) {
           return StoreCard(
-            store: stores[index],
+            store: _stores[index],
             onTap: () {
-              final storeId = stores[index].id;
+              final storeId = _stores[index].id;
               final route = '/store/$storeId';
               try {
                 // Try using context.pushNamed with named route

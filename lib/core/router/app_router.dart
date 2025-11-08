@@ -13,6 +13,7 @@ import '../../features/cart/screens/checkout_screen.dart';
 import '../../features/cart/screens/order_confirmation_screen.dart';
 import '../../features/cart/models/cart.dart';
 import '../../shared/main_scaffold.dart';
+import 'auth_guard.dart';
 
 /// App routing configuration using GoRouter
 class AppRouter {
@@ -29,6 +30,7 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: login,
     debugLogDiagnostics: true,
+    redirect: AuthGuard.redirectLogic,
     onException: (context, state, router) {
       // navigate to home as fallback
       router.go(home);

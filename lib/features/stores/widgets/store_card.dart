@@ -4,6 +4,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/store.dart';
 import 'product_carousel.dart';
+import 'image_carousel.dart';
 import 'store_info_widgets.dart';
 
 /// Beautiful store card component displaying featured products and store info
@@ -31,8 +32,10 @@ class StoreCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top half - Product Carousel
-            ProductCarousel(products: store.carouselProducts, height: 160),
+            // Top half - Image Carousel (use showcase images if available, otherwise products)
+            store.showcaseImages.isNotEmpty
+                ? ImageCarousel(images: store.showcaseImages, height: 160)
+                : ProductCarousel(products: store.carouselProducts, height: 160),
 
             // Bottom half - Store Information
             Padding(

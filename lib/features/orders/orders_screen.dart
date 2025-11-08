@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/auth_required.dart';
 
 /// Orders screen - Shows user's order history and active orders
 class OrdersScreen extends StatelessWidget {
@@ -10,31 +11,34 @@ class OrdersScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Pedidos', style: AppTypography.h3)),
-      body: DefaultTabController(
-        length: 2,
-        child: Column(
-          children: [
-            // Tab Bar
-            const TabBar(
-              tabs: [
-                Tab(text: 'Activos'),
-                Tab(text: 'Historial'),
-              ],
-            ),
-
-            // Tab Views
-            Expanded(
-              child: TabBarView(
-                children: [
-                  // Active Orders Tab
-                  _ActiveOrdersTab(),
-
-                  // Order History Tab
-                  _OrderHistoryTab(),
+      body: AuthRequired(
+        message: 'Inicia sesión para ver tus pedidos',
+        child: DefaultTabController(
+          length: 2,
+          child: Column(
+            children: [
+              // Tab Bar
+              const TabBar(
+                tabs: [
+                  Tab(text: 'Activos'),
+                  Tab(text: 'Historial'),
                 ],
               ),
-            ),
-          ],
+
+              // Tab Views
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    // Active Orders Tab
+                    _ActiveOrdersTab(),
+
+                    // Order History Tab
+                    _OrderHistoryTab(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

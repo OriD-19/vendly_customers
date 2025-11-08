@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/auth_required.dart';
 import '../models/cart_item.dart';
 import '../models/cart.dart';
 
@@ -101,7 +102,10 @@ class _CartScreenState extends State<CartScreen> {
         ),
         centerTitle: true,
       ),
-      body: _cart.isEmpty ? _buildEmptyCart() : _buildCartContent(),
+      body: AuthRequired(
+        message: 'Inicia sesión para ver tu carrito de compras',
+        child: _cart.isEmpty ? _buildEmptyCart() : _buildCartContent(),
+      ),
     );
   }
 
