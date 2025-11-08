@@ -18,10 +18,7 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            VendlyLogo(
-              height: 32,
-              color: AppColors.persianIndigo,
-            ),
+            VendlyLogo(height: 32, color: AppColors.persianIndigo),
             const Spacer(),
             IconButton(
               onPressed: () {},
@@ -90,37 +87,6 @@ class HomeScreen extends StatelessWidget {
             _StoresList(),
 
             // Debug button
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        try {
-                          context.push('/test');
-                        } catch (e) {
-                        }
-                      },
-                      child: const Text('Test /test Route'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        try {
-                          context.push('/store/1');
-                        } catch (e) {
-                        }
-                      },
-                      child: const Text('Test Store Route'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             const SizedBox(height: 24),
 
             // Promotions
@@ -245,7 +211,7 @@ class _StoresListState extends State<_StoresList> {
 
     try {
       final result = await StoreService.getAllStores();
-      
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -271,9 +237,7 @@ class _StoresListState extends State<_StoresList> {
     if (_isLoading) {
       return const Padding(
         padding: EdgeInsets.all(32.0),
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -283,11 +247,7 @@ class _StoresListState extends State<_StoresList> {
         child: Center(
           child: Column(
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: AppColors.error,
-              ),
+              Icon(Icons.error_outline, size: 48, color: AppColors.error),
               const SizedBox(height: 16),
               Text(
                 _error!,
@@ -341,7 +301,10 @@ class _StoresListState extends State<_StoresList> {
               final route = '/store/$storeId';
               try {
                 // Try using context.pushNamed with named route
-                context.pushNamed('store-detail', pathParameters: {'storeId': storeId});
+                context.pushNamed(
+                  'store-detail',
+                  pathParameters: {'storeId': storeId},
+                );
               } catch (e) {
                 // Fallback to context.push()
                 try {

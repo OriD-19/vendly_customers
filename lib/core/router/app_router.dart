@@ -49,15 +49,6 @@ class AppRouter {
         builder: (context, state) => const OnboardingScreen(),
       ),
 
-      // debug test route
-      GoRoute(
-        path: '/test',
-        builder: (context, state) => Scaffold(
-          appBar: AppBar(title: const Text('Test Route')),
-          body: const Center(child: Text('Test route works!')),
-        ),
-      ),
-
       // checkout routes
       GoRoute(
         path: '/checkout',
