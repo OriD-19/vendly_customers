@@ -12,6 +12,15 @@ class AuthService {
   static const String _refreshTokenKey = 'refresh_token';
   static const String _userKey = 'user_data';
 
+  /// Initialize authentication state from storage
+  /// Should be called when the app starts
+  static Future<void> initialize() async {
+    final token = await _getAuthToken();
+    if (token != null && token.isNotEmpty) {
+      ApiConfig.setAuthToken(token);
+    }
+  }
+
   /// Register a new customer account
   static Future<AuthResult> register({
     required String name,
@@ -146,12 +155,9 @@ class AuthService {
   /// Logout current user
   static Future<void> logout() async {
     try {
-      // Attempt to call logout endpoint (optional)
       await ApiConfig.dio.post(ApiConfig.authLogout);
     } catch (e) {
-      // Ignore logout errors, clear local data anyway
     } finally {
-      // Clear all local authentication data
       await _clearAuthData();
       ApiConfig.clearAuthToken();
     }

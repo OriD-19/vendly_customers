@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'token_refresh_interceptor.dart';
 
 /// API Configuration and Dio instance setup
 class ApiConfig {
@@ -22,6 +23,10 @@ class ApiConfig {
         ),
       );
 
+      // Add token refresh interceptor FIRST (so it runs before logging)
+      _dio!.interceptors.add(TokenRefreshInterceptor(_dio!));
+
+      // Add logging interceptor
       _dio!.interceptors.add(
         LogInterceptor(
           requestBody: true,
