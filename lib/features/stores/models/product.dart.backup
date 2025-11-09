@@ -170,30 +170,20 @@ class Product {
 
   /// Create Product from JSON
   factory Product.fromJson(Map<String, dynamic> json) {
-    // Parse discount end date if available
-    DateTime? discountEndDate;
-    if (json['discount_end_date'] != null) {
-      try {
-        discountEndDate = DateTime.parse(json['discount_end_date']);
-      } catch (e) {
-        discountEndDate = null;
-      }
-    }
-
     return Product(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
-      description: json['long_description'] ??
-          json['description'] ??
-          json['short_description'] ??
-          '',
+      description: json['description'] ?? '',
       price: (json['price'] ?? 0).toDouble(),
-      imageUrl: _getFirstImage(json),
-      additionalImages: _getAdditionalImages(json),
+      imageUrl: json['image_url'] ?? json['imageUrl'] ?? '',
+      additionalImages:
+          (json['additional_images'] ?? json['additionalImages'] ?? [])
+              .map<String>((img) => img.toString())
+              .toList(),
       category: json['category'] ?? '',
-      isAvailable: json['is_active'] ?? json['isAvailable'] ?? true,
+      isAvailable: json['is_available'] ?? json['isAvailable'] ?? true,
       stock: json['stock'] ?? 0,
-      tags: _parseTags(json['tags']),
+      tags: (json['tags'] ?? []).map<String>((tag) => tag.toString()).toList(),
       rating: (json['rating'] ?? 0).toDouble(),
       reviewCount: json['review_count'] ?? json['reviewCount'] ?? 0,
       reviews: [], // Reviews are loaded separately
@@ -203,90 +193,13 @@ class Product {
               name: json['seller']['name'] ?? 'Vendedor',
               avatar: json['seller']['avatar'] ?? '',
               rating: (json['seller']['rating'] ?? 4.0).toDouble(),
-              reviewCount: json['seller']['review_count'] ??
+              reviewCount:
+                  json['seller']['review_count'] ??
                   json['seller']['reviewCount'] ??
                   0,
             )
           : null,
-      discountPrice: json['discount_price'] != null
-          ? (json['discount_price'] as num).toDouble()
-          : null,
-      discountEndDate: discountEndDate,
-      hasActiveOffer: json['has_active_offer'] ?? false,
-      effectivePrice: json['effective_price'] != null
-          ? (json['effective_price'] as num).toDouble()
-          : null,
-      storeId: json['store_id'],
-      categoryId: json['category_id'],
     );
-  }
-
-  /// Extract first image from various possible JSON structures
-  static String _getFirstImage(Map<String, dynamic> json) {
-    // Check for images array
-    if (json['images'] != null &&
-        json['images'] is List &&
-        (json['images'] as List).isNotEmpty) {
-      final images = json['images'] as List;
-      if (images.first is Map && images.first['url'] != null) {
-        return images.first['url'];
-      } else if (images.first is String) {
-        return images.first;
-      }
-    }
-
-    // Fallback to single image_url field
-    return json['image_url'] ?? json['imageUrl'] ?? '';
-  }
-
-  /// Extract additional images from JSON
-  static List<String> _getAdditionalImages(Map<String, dynamic> json) {
-    if (json['images'] != null && json['images'] is List) {
-      final images = json['images'] as List;
-      return images
-          .skip(1)
-          .map<String>((img) {
-            if (img is Map && img['url'] != null) {
-              return img['url'].toString();
-            } else if (img is String) {
-              return img;
-            }
-            return '';
-          })
-          .where((url) => url.isNotEmpty)
-          .toList();
-    }
-
-    // Fallback to additional_images field
-    if (json['additional_images'] != null ||
-        json['additionalImages'] != null) {
-      return (json['additional_images'] ?? json['additionalImages'] ?? [])
-          .map<String>((img) => img.toString())
-          .toList();
-    }
-
-    return [];
-  }
-
-  /// Parse tags from JSON (can be array of strings or objects)
-  static List<String> _parseTags(dynamic tagsData) {
-    if (tagsData == null) return [];
-
-    if (tagsData is List) {
-      return tagsData
-          .map<String>((tag) {
-            if (tag is String) {
-              return tag;
-            } else if (tag is Map && tag['name'] != null) {
-              return tag['name'].toString();
-            }
-            return '';
-          })
-          .where((tag) => tag.isNotEmpty)
-          .toList();
-    }
-
-    return [];
   }
 
   /// Convert Product to JSON
@@ -304,12 +217,6 @@ class Product {
       'tags': tags,
       'rating': rating,
       'review_count': reviewCount,
-      'discount_price': discountPrice,
-      'discount_end_date': discountEndDate?.toIso8601String(),
-      'has_active_offer': hasActiveOffer,
-      'effective_price': effectivePrice,
-      'store_id': storeId,
-      'category_id': categoryId,
     };
   }
 }

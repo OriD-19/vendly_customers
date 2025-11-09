@@ -3,10 +3,12 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../models/store.dart';
-import '../services/store_data_service.dart';
+import '../models/product.dart';
+import '../services/store_service.dart';
+import '../services/product_service.dart';
 import '../widgets/store_info_widgets.dart';
 import '../widgets/product_list_item.dart';
-import '../widgets/promotion_card.dart';
+import '../widgets/product_offer_card.dart';
 
 /// Store detail page showing full catalog and promotions
 class StoreDetailScreen extends StatefulWidget {
@@ -22,7 +24,9 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   Store? store;
+  List<Product> products = [];
   bool isLoading = true;
+  String? error;
 
   @override
   void initState() {
@@ -31,21 +35,101 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
     _loadStoreData();
   }
 
-  void _loadStoreData() async {
-    // Simulate loading delay
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final storeData = StoreDataService.getStoreById(widget.storeId);
+  Future<void> _loadStoreData() async {
     setState(() {
-      store = storeData;
-      isLoading = false;
+      isLoading = true;
+      error = null;
     });
+
+    try {
+      // Parse store ID
+      final storeId = int.tryParse(widget.storeId);
+      if (storeId == null) {
+        setState(() {
+          isLoading = false;
+          error = 'ID de tienda inválido';
+        });
+        return;
+      }
+
+      // Fetch store details and products in parallel
+      final results = await Future.wait([
+        StoreService.getStoreById(storeId),
+        ProductService.getProductsByStore(storeId: storeId, skip: 0, limit: 100),
+      ]);
+
+      final storeResult = results[0] as StoreDetailResult;
+      final productResult = results[1] as ProductResult;
+
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          
+          if (!storeResult.success) {
+            error = storeResult.error ?? 'Error al cargar la tienda';
+          } else if (!productResult.success) {
+            // Store loaded but products failed - show store anyway
+            store = storeResult.store;
+            error = productResult.error;
+          } else {
+            store = storeResult.store;
+            products = productResult.products;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          error = 'Error de conexión: ${e.toString()}';
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (error != null && store == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Error')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: AppColors.textTertiary,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  error!,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodyLarge.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _loadStoreData,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Reintentar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.persianIndigo,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     if (store == null) {
@@ -199,8 +283,8 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _FeaturedTab(store: store!),
-                  _CatalogueTab(store: store!),
+                  _FeaturedTab(store: store!, products: products),
+                  _CatalogueTab(store: store!, products: products),
                   _ReviewsTab(store: store!),
                 ],
               ),
@@ -237,65 +321,85 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
 
 /// Featured tab with promotions and popular items
 class _FeaturedTab extends StatelessWidget {
-  const _FeaturedTab({required this.store});
+  const _FeaturedTab({required this.store, required this.products});
 
   final Store store;
+  final List<Product> products;
 
   @override
   Widget build(BuildContext context) {
-    final promotions = StoreDataService.getStorePromotions(store.id);
-    final popularItems = store.featuredProducts;
+    // Filter products with active offers
+    final productsWithOffers = products.where((p) => p.hasValidDiscount).toList();
+    
+    // Get popular items (products with high ratings or featured products)
+    final popularItems = products.take(10).toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Promotions Section
-          if (promotions.isNotEmpty) ...[
+          // Promotions Section (Products with active offers)
+          if (productsWithOffers.isNotEmpty) ...[
             Text(
               'Ofertas Especiales',
               style: AppTypography.h4.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 140,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                itemCount: promotions.length,
-                itemBuilder: (context, index) {
-                  return SizedBox(
-                    width: 280, // Fixed width for promotion cards
-                    child: PromotionCard(
-                      promotion: promotions[index],
-                      onTap: () {
-                        // TODO: Handle tap
-                      },
-                    ),
-                  );
+            ...productsWithOffers.map((product) {
+              return ProductOfferCard(
+                product: product,
+                onTap: () {
+                  context.push('/store/${store.id}/product/${product.id}');
                 },
-              ),
-            ),
+              );
+            }),
             const SizedBox(height: 32),
           ],
 
           // Popular Items Section
-          Text(
-            'Productos Populares',
-            style: AppTypography.h4.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
+          if (popularItems.isNotEmpty) ...[
+            Text(
+              'Productos Populares',
+              style: AppTypography.h4.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
 
-          ...popularItems.map((product) {
-            return ProductListItem(
-              product: product,
-              showBestSellerBadge: true,
-              onTap: () {
-                context.push('/store/${store.id}/product/${product.id}');
-              },
-            );
-          }),
+            ...popularItems.map((product) {
+              return ProductListItem(
+                product: product,
+                showBestSellerBadge: false,
+                onTap: () {
+                  context.push('/store/${store.id}/product/${product.id}');
+                },
+              );
+            }),
+          ],
+
+          // Empty state
+          if (products.isEmpty) ...[
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(48.0),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 64,
+                      color: AppColors.textTertiary,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No hay productos disponibles',
+                      style: AppTypography.bodyLarge.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -304,52 +408,83 @@ class _FeaturedTab extends StatelessWidget {
 
 /// Menu tab with full product catalog
 class _CatalogueTab extends StatelessWidget {
-  const _CatalogueTab({required this.store});
+  const _CatalogueTab({required this.store, required this.products});
 
   final Store store;
+  final List<Product> products;
 
   @override
   Widget build(BuildContext context) {
-    final allProducts = StoreDataService.getStoreProducts(store.id);
-    final categories = StoreDataService.getStoreCategories(store.id);
+    // Group products by category
+    final Map<String, List<Product>> productsByCategory = {};
+    for (final product in products) {
+      final category = product.category.isEmpty ? 'Sin categoría' : product.category;
+      if (!productsByCategory.containsKey(category)) {
+        productsByCategory[category] = [];
+      }
+      productsByCategory[category]!.add(product);
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Categories
-          ...categories.map((category) {
-            final categoryProducts = allProducts
-                .where((p) => p.category == category.name)
-                .toList();
+          if (products.isEmpty) ...[
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(48.0),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 64,
+                      color: AppColors.textTertiary,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No hay productos disponibles',
+                      style: AppTypography.bodyLarge.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ] else ...[
+            // Categories
+            ...productsByCategory.entries.map((entry) {
+              final categoryName = entry.key;
+              final categoryProducts = entry.value;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    category.name,
-                    style: AppTypography.h4.copyWith(
-                      fontWeight: FontWeight.bold,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      categoryName,
+                      style: AppTypography.h4.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
 
-                ...categoryProducts.map((product) {
-                  return ProductListItem(
-                    product: product, 
-                    onTap: () {
-                      context.push('/store/${store.id}/product/${product.id}');
-                    },
-                  );
-                }),
+                  ...categoryProducts.map((product) {
+                    return ProductListItem(
+                      product: product,
+                      onTap: () {
+                        context.push('/store/${store.id}/product/${product.id}');
+                      },
+                    );
+                  }),
 
-                const SizedBox(height: 16),
-              ],
-            );
-          }),
+                  const SizedBox(height: 16),
+                ],
+              );
+            }),
+          ],
         ],
       ),
     );

@@ -286,15 +286,8 @@ class _CategoriesSectionState extends State<_CategoriesSection> {
                   ),
                   child: GestureDetector(
                     onTap: () {
-                      // TODO: Navigate to category products screen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Categoría: ${category.name} (${category.productCount} productos)',
-                          ),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
+                      // Navigate to category products screen
+                      context.push('/category/${category.id}/products');
                     },
                     child: Column(
                       children: [

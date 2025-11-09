@@ -8,6 +8,7 @@ import '../../features/search/search_screen.dart';
 import '../../features/orders/orders_screen.dart';
 import '../../features/stores/screens/store_detail_screen.dart';
 import '../../features/stores/screens/product_detail_screen.dart';
+import '../../features/categories/screens/category_products_screen.dart';
 import '../../features/cart/screens/cart_screen.dart';
 import '../../features/cart/screens/checkout_screen.dart';
 import '../../features/cart/screens/order_confirmation_screen.dart';
@@ -107,7 +108,6 @@ class AppRouter {
             path: 'product/:productId',
             builder: (context, state) {
               final productId = state.pathParameters['productId'];
-              final storeId = state.pathParameters['storeId'];
 
               if (productId == null) {
                 return const Scaffold(
@@ -119,6 +119,30 @@ class AppRouter {
             },
           ),
         ],
+      ),
+
+      // category products route (outside shell for proper navigation stack)
+      GoRoute(
+        name: 'category-products',
+        path: '/category/:categoryId/products',
+        builder: (context, state) {
+          final categoryIdStr = state.pathParameters['categoryId'];
+          
+          if (categoryIdStr == null) {
+            return const Scaffold(
+              body: Center(child: Text('Category ID is required')),
+            );
+          }
+
+          final categoryId = int.tryParse(categoryIdStr);
+          if (categoryId == null) {
+            return const Scaffold(
+              body: Center(child: Text('Invalid Category ID')),
+            );
+          }
+
+          return CategoryProductsScreen(categoryId: categoryId);
+        },
       ),
     ],
   );

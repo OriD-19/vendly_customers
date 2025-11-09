@@ -10,21 +10,21 @@ dependencies:
   flutter:
     sdk: flutter
   
-  # Navigation
+  # navigation
   go_router: ^14.6.2
   
-  # State Management
+  # state
   flutter_riverpod: ^2.6.1
   
-  # UI Components
+  # ui components
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
   cached_network_image: ^3.4.1
   
-  # HTTP Client
+  # http client
   dio: ^5.7.0
   
-  # Utilities
+  # utilities
   shared_preferences: ^2.3.2
 
 dev_dependencies:
