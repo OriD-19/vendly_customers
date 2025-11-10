@@ -19,6 +19,29 @@ class StoreRating extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasNoReviews = reviewCount == 0;
+
+    if (hasNoReviews) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.star_border,
+            color: AppColors.textTertiary,
+            size: size,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'N/A',
+            style: AppTypography.labelSmall.copyWith(
+              color: AppColors.textTertiary,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

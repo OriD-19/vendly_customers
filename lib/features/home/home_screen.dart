@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/vendly_logo.dart';
 import '../stores/services/store_service.dart';
+import '../stores/services/store_score_service.dart';
 import '../stores/models/store.dart';
 import '../stores/widgets/store_card.dart';
 import '../categories/services/category_service.dart';
@@ -349,15 +350,39 @@ class _StoresListState extends State<_StoresList> {
     });
 
     try {
-      final result = await StoreService.getAllStores();
+      // Fetch stores and scores in parallel
+      final results = await Future.wait([
+        StoreService.getAllStores(),
+        StoreScoreService.getStoreScores(skip: 0, limit: 100),
+      ]);
+
+      final storeResult = results[0] as StoreResult;
+      final scoreResult = results[1] as StoreScoreResult;
 
       if (mounted) {
         setState(() {
           _isLoading = false;
-          if (result.success) {
-            _stores = result.stores;
+          if (storeResult.success) {
+            _stores = storeResult.stores;
+            
+            // Apply scores to stores if available
+            if (scoreResult.success) {
+              _stores = _stores.map((store) {
+                final storeId = int.tryParse(store.id);
+                if (storeId != null) {
+                  final score = scoreResult.getScoreForStore(storeId);
+                  if (score != null && score.hasReviews) {
+                    return store.copyWith(
+                      rating: score.averageRating,
+                      reviewCount: score.totalReviews,
+                    );
+                  }
+                }
+                return store;
+              }).toList();
+            }
           } else {
-            _error = result.error ?? 'Error al cargar tiendas';
+            _error = storeResult.error ?? 'Error al cargar tiendas';
           }
         });
       }

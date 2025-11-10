@@ -165,6 +165,61 @@ class Store {
     // Fallback to banner if no showcase images
     return bannerUrl.isNotEmpty ? [bannerUrl] : [];
   }
+
+  /// Create a copy of Store with updated fields
+  Store copyWith({
+    String? id,
+    String? name,
+    String? description,
+    String? category,
+    String? logoUrl,
+    String? bannerUrl,
+    double? rating,
+    int? reviewCount,
+    String? address,
+    String? phone,
+    String? email,
+    StoreHours? hours,
+    List<Product>? featuredProducts,
+    List<String>? tags,
+    bool? isOpen,
+    bool? isVerified,
+    double? deliveryFee,
+    int? estimatedDeliveryTime,
+    List<String>? showcaseImages,
+    int? ownerId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? storeLocation,
+    String? type,
+  }) {
+    return Store(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      category: category ?? this.category,
+      logoUrl: logoUrl ?? this.logoUrl,
+      bannerUrl: bannerUrl ?? this.bannerUrl,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      address: address ?? this.address,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      hours: hours ?? this.hours,
+      featuredProducts: featuredProducts ?? this.featuredProducts,
+      tags: tags ?? this.tags,
+      isOpen: isOpen ?? this.isOpen,
+      isVerified: isVerified ?? this.isVerified,
+      deliveryFee: deliveryFee ?? this.deliveryFee,
+      estimatedDeliveryTime: estimatedDeliveryTime ?? this.estimatedDeliveryTime,
+      showcaseImages: showcaseImages ?? this.showcaseImages,
+      ownerId: ownerId ?? this.ownerId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      storeLocation: storeLocation ?? this.storeLocation,
+      type: type ?? this.type,
+    );
+  }
 }
 
 /// Store operating hours

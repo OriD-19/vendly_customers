@@ -6,6 +6,7 @@ import '../models/store.dart';
 import '../models/product.dart';
 import '../services/store_service.dart';
 import '../services/product_service.dart';
+import '../services/store_score_service.dart';
 import '../widgets/store_info_widgets.dart';
 import '../widgets/product_list_item.dart';
 import '../widgets/product_offer_card.dart';
@@ -52,14 +53,16 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
         return;
       }
 
-      // Fetch store details and products in parallel
+      // Fetch store details, products, and score in parallel
       final results = await Future.wait([
         StoreService.getStoreById(storeId),
         ProductService.getProductsByStore(storeId: storeId, skip: 0, limit: 100),
+        StoreScoreService.getStoreScores(skip: 0, limit: 100),
       ]);
 
       final storeResult = results[0] as StoreDetailResult;
       final productResult = results[1] as ProductResult;
+      final scoreResult = results[2] as StoreScoreResult;
 
       if (mounted) {
         setState(() {
@@ -70,10 +73,33 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
           } else if (!productResult.success) {
             // Store loaded but products failed - show store anyway
             store = storeResult.store;
+            
+            // Apply score if available
+            if (scoreResult.success) {
+              final storeScore = scoreResult.getScoreForStore(storeId);
+              if (storeScore != null && storeScore.hasReviews) {
+                store = store!.copyWith(
+                  rating: storeScore.averageRating,
+                  reviewCount: storeScore.totalReviews,
+                );
+              }
+            }
+            
             error = productResult.error;
           } else {
             store = storeResult.store;
             products = productResult.products;
+            
+            // Apply score if available
+            if (scoreResult.success) {
+              final storeScore = scoreResult.getScoreForStore(storeId);
+              if (storeScore != null && storeScore.hasReviews) {
+                store = store!.copyWith(
+                  rating: storeScore.averageRating,
+                  reviewCount: storeScore.totalReviews,
+                );
+              }
+            }
           }
         });
       }
