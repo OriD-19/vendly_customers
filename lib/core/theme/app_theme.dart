@@ -243,6 +243,33 @@ class AppTheme {
         ),
       ),
 
+      // Text Button Theme
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.mauveDark,
+          textStyle: AppTypography.buttonMedium,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadiusMedium),
+          ),
+        ),
+      ),
+
+      // Outlined Button Theme
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.mauveDark,
+          side: const BorderSide(color: AppColors.borderStrongDark),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadiusXLarge),
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: spacingL,
+            vertical: spacingM,
+          ),
+          textStyle: AppTypography.buttonLarge,
+        ),
+      ),
+
       // Card Theme
       cardTheme: CardThemeData(
         color: AppColors.surfacePrimaryDark,
@@ -270,12 +297,38 @@ class AppTheme {
           borderRadius: BorderRadius.circular(borderRadiusMedium),
           borderSide: const BorderSide(color: AppColors.focusRing, width: 2),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(borderRadiusMedium),
+          borderSide: const BorderSide(color: AppColors.error, width: 2),
+        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: spacingM,
           vertical: spacingM,
         ),
         hintStyle: AppTypography.bodyMedium.copyWith(
           color: AppColors.textTertiaryDark,
+        ),
+      ),
+
+      // Floating Action Button Theme
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: AppColors.persianIndigoDark,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: CircleBorder(),
+      ),
+
+      // Chip Theme
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.surfaceSecondaryDark,
+        selectedColor: AppColors.persianIndigoDark,
+        secondarySelectedColor: AppColors.mauveDark,
+        labelStyle: AppTypography.labelSmall,
+        secondaryLabelStyle: AppTypography.labelSmall.copyWith(
+          color: Colors.white,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadiusXLarge),
         ),
       ),
     );

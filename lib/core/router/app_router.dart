@@ -111,7 +111,6 @@ class AppRouter {
           return StoreDetailScreen(storeId: storeId);
         },
         routes: [
-          // Product Detail Route as sub-route of Store Detail
           GoRoute(
             name: 'product-detail',
             path: 'product/:productId',
@@ -127,7 +126,6 @@ class AppRouter {
               return ProductDetailScreen(productId: productId);
             },
           ),
-          // Chat Route as sub-route of Store Detail
           GoRoute(
             name: 'store-chat',
             path: 'chat',

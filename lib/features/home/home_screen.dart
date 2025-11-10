@@ -91,15 +91,6 @@ class HomeScreen extends StatelessWidget {
             // Store Cards List
             _StoresList(),
 
-            // Debug button
-            const SizedBox(height: 24),
-
-            // Promotions
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: _PromotionsSection(),
-            ),
-
             const SizedBox(height: 24),
           ],
         ),
@@ -352,7 +343,6 @@ class _StoresListState extends State<_StoresList> {
     });
 
     try {
-      // Fetch stores and scores in parallel
       final results = await Future.wait([
         StoreService.getAllStores(),
         StoreScoreService.getStoreScores(skip: 0, limit: 100),
@@ -466,13 +456,11 @@ class _StoresListState extends State<_StoresList> {
               final storeId = _stores[index].id;
               final route = '/store/$storeId';
               try {
-                // Try using context.pushNamed with named route
                 context.pushNamed(
                   'store-detail',
                   pathParameters: {'storeId': storeId},
                 );
               } catch (e) {
-                // Fallback to context.push()
                 try {
                   context.push(route);
                 } catch (e2) {
@@ -492,27 +480,27 @@ class _StoresListState extends State<_StoresList> {
   }
 }
 
-class _PromotionsSection extends StatelessWidget {
-  const _PromotionsSection();
+// class _PromotionsSection extends StatelessWidget {
+//   const _PromotionsSection();
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Promociones especiales', style: AppTypography.h3),
-        const SizedBox(height: 16),
-        Container(
-          height: 120,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceSecondary,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Center(
-            child: Text('🎉 Ofertas del día', style: TextStyle(fontSize: 18)),
-          ),
-        ),
-      ],
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Text('Promociones especiales', style: AppTypography.h3),
+//         const SizedBox(height: 16),
+//         Container(
+//           height: 120,
+//           decoration: BoxDecoration(
+//             color: AppColors.surfaceSecondary,
+//             borderRadius: BorderRadius.circular(16),
+//           ),
+//           child: const Center(
+//             child: Text('Ofertas del día', style: TextStyle(fontSize: 18)),
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+// }

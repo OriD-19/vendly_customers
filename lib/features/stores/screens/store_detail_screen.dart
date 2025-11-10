@@ -53,7 +53,6 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
         return;
       }
 
-      // Fetch store details, products, and score in parallel
       final results = await Future.wait([
         StoreService.getStoreById(storeId),
         ProductService.getProductsByStore(storeId: storeId, skip: 0, limit: 100),
@@ -534,7 +533,6 @@ class _CatalogueTab extends StatelessWidget {
   }
 }
 
-/// Reviews tab (simplified for prototype)
 class _ReviewsTab extends StatelessWidget {
   const _ReviewsTab({required this.store});
 
