@@ -318,6 +318,23 @@ class _StoreDetailScreenState extends State<StoreDetailScreen>
           ],
         ),
       ),
+      // Floating chat button
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          context.push(
+            '/store/${widget.storeId}/chat?storeName=${Uri.encodeComponent(store!.name)}',
+          );
+        },
+        backgroundColor: AppColors.persianIndigo,
+        icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+        label: Text(
+          'Chat',
+          style: AppTypography.labelMedium.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 

@@ -12,6 +12,7 @@ import '../../features/categories/screens/category_products_screen.dart';
 import '../../features/cart/screens/cart_screen.dart';
 import '../../features/cart/screens/checkout_screen.dart';
 import '../../features/cart/screens/order_confirmation_screen.dart';
+import '../../features/chat/screens/chat_screen.dart';
 import '../../features/cart/models/cart.dart';
 import '../../shared/main_scaffold.dart';
 import 'auth_guard.dart';
@@ -124,6 +125,26 @@ class AppRouter {
               }
 
               return ProductDetailScreen(productId: productId);
+            },
+          ),
+          // Chat Route as sub-route of Store Detail
+          GoRoute(
+            name: 'store-chat',
+            path: 'chat',
+            builder: (context, state) {
+              final storeId = state.pathParameters['storeId'];
+              final storeName = state.uri.queryParameters['storeName'] ?? 'Tienda';
+
+              if (storeId == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Store ID is required')),
+                );
+              }
+
+              return ChatScreen(
+                storeId: storeId,
+                storeName: storeName,
+              );
             },
           ),
         ],
