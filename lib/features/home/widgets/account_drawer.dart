@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/router/app_router.dart';
+import '../../../shared/widgets/theme_widgets.dart';
 import '../../auth/services/auth_service.dart';
 
 /// Account drawer with user profile and settings
@@ -150,6 +151,14 @@ class _AccountDrawerState extends State<AccountDrawer> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                  ),
+                  _DrawerMenuItem(
+                    icon: Icons.palette_outlined,
+                    title: 'Tema de la aplicación',
+                    onTap: () {
+                      Navigator.pop(context);
+                      ThemeSelector.show(context);
+                    },
                   ),
                   _DrawerMenuItem(
                     icon: Icons.settings_outlined,

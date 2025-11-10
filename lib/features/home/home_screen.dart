@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/vendly_logo.dart';
+import '../../shared/widgets/theme_widgets.dart';
 import '../stores/services/store_service.dart';
 import '../stores/services/store_score_service.dart';
 import '../stores/models/store.dart';
@@ -27,6 +28,7 @@ class HomeScreen extends StatelessWidget {
               onPressed: () {},
               icon: const Icon(Icons.notifications_outlined),
             ),
+            const ThemeToggleButton(), // Theme toggle button
           ],
         ),
         actions: [
