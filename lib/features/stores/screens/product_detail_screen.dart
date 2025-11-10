@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/product.dart';
-import '../services/store_data_service.dart';
+import '../models/review.dart';
+import '../services/product_service.dart';
+import '../services/review_service.dart';
 
 /// Product detail screen showing full product information
 class ProductDetailScreen extends StatefulWidget {
@@ -23,6 +26,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   late PageController _imageController;
   int _currentImageIndex = 0;
   Product? product;
+  bool isLoading = true;
+  String? errorMessage;
+  
+  // Review-related state
+  List<Review> reviews = [];
+  ReviewStats? reviewStats;
+  Review? myReview;
+  bool isLoadingReviews = false;
+  int currentReviewPage = 0;
+  bool hasMoreReviews = true;
 
   @override
   void initState() {
@@ -37,36 +50,312 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.dispose();
   }
 
-  void _loadProduct() {
-    // Find the product from store data service
-    final stores = StoreDataService.getAllStores();
-    for (final store in stores) {
-      for (final prod in store.featuredProducts) {
-        if (prod.id == widget.productId) {
-          setState(() {
-            product = prod;
-          });
-          break;
-        }
-      }
-      if (product != null) break;
+  Future<void> _loadProduct() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    final productId = int.tryParse(widget.productId);
+    if (productId == null) {
+      setState(() {
+        isLoading = false;
+        errorMessage = 'ID de producto inválido';
+      });
+      return;
     }
+
+    final result = await ProductService.getProductById(productId);
+
+    if (result.success && result.products.isNotEmpty) {
+      setState(() {
+        product = result.products.first;
+        isLoading = false;
+      });
+      
+      // Load reviews after product is loaded
+      _loadReviews();
+      _loadReviewStats();
+      _loadMyReview();
+    } else {
+      setState(() {
+        errorMessage = result.error ?? 'No se pudo cargar el producto';
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadReviews({bool loadMore = false}) async {
+    if (product == null) return;
+
+    setState(() {
+      isLoadingReviews = true;
+    });
+
+    final productId = int.tryParse(widget.productId);
+    if (productId == null) return;
+
+    final skip = loadMore ? reviews.length : 0;
+    final result = await ReviewService.getProductReviews(
+      productId: productId,
+      skip: skip,
+      limit: 10,
+    );
+
+    if (result.success) {
+      setState(() {
+        if (loadMore) {
+          reviews.addAll(result.reviews);
+        } else {
+          reviews = result.reviews;
+        }
+        hasMoreReviews = result.reviews.length >= 10;
+        isLoadingReviews = false;
+      });
+    } else {
+      setState(() {
+        isLoadingReviews = false;
+      });
+    }
+  }
+
+  Future<void> _loadReviewStats() async {
+    if (product == null) return;
+
+    final productId = int.tryParse(widget.productId);
+    if (productId == null) return;
+
+    final result = await ReviewService.getProductReviewStats(productId);
+    if (result.success && result.stats != null) {
+      setState(() {
+        reviewStats = result.stats;
+      });
+    }
+  }
+
+  Future<void> _loadMyReview() async {
+    if (product == null) return;
+
+    final productId = int.tryParse(widget.productId);
+    if (productId == null) return;
+
+    final result = await ReviewService.getMyReviewForProduct(productId);
+    if (result.success && result.reviews.isNotEmpty) {
+      setState(() {
+        myReview = result.reviews.first;
+      });
+    }
+  }
+
+  Future<void> _showReviewDialog({Review? existingReview}) async {
+    int rating = existingReview?.rating ?? 5;
+    final commentController = TextEditingController(text: existingReview?.comment ?? '');
+
+    await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(
+            existingReview == null ? 'Escribe una opinión' : 'Editar opinión',
+            style: AppTypography.h3,
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Calificación',
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    return IconButton(
+                      onPressed: () {
+                        setDialogState(() {
+                          rating = index + 1;
+                        });
+                      },
+                      icon: Icon(
+                        index < rating ? Icons.star : Icons.star_border,
+                        color: AppColors.warning,
+                        size: 36,
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Comentario',
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: commentController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Comparte tu experiencia con este producto...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            if (existingReview != null)
+              TextButton(
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Eliminar opinión'),
+                      content: const Text('¿Estás seguro de que quieres eliminar tu opinión?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                          ),
+                          child: const Text('Eliminar'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true && mounted) {
+                    final success = await ReviewService.deleteReview(existingReview.id);
+                    if (success && mounted) {
+                      Navigator.pop(context, true);
+                      setState(() {
+                        myReview = null;
+                      });
+                      _loadReviews();
+                      _loadReviewStats();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Opinión eliminada'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                ),
+                child: const Text('Eliminar'),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (commentController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Por favor escribe un comentario'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.pop(context, true);
+
+                final productId = int.tryParse(widget.productId);
+                if (productId == null) return;
+
+                if (existingReview == null) {
+                  // Create new review
+                  final request = CreateReviewRequest(
+                    productId: productId,
+                    rating: rating,
+                    comment: commentController.text.trim(),
+                  );
+                  final result = await ReviewService.createReview(request);
+                  
+                  if (result.success && mounted) {
+                    setState(() {
+                      myReview = result.reviews.first;
+                    });
+                    _loadReviews();
+                    _loadReviewStats();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Opinión publicada'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  } else if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(result.error ?? 'Error al publicar opinión'),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                } else {
+                  // Update existing review
+                  final request = UpdateReviewRequest(
+                    rating: rating,
+                    comment: commentController.text.trim(),
+                  );
+                  final result = await ReviewService.updateReview(
+                    reviewId: existingReview.id,
+                    request: request,
+                  );
+                  
+                  if (result.success && mounted) {
+                    setState(() {
+                      myReview = result.reviews.first;
+                    });
+                    _loadReviews();
+                    _loadReviewStats();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Opinión actualizada'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  } else if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(result.error ?? 'Error al actualizar opinión'),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.persianIndigo,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Guardar'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (product == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Producto no encontrado'),
-          backgroundColor: AppColors.surfacePrimary,
-        ),
-        body: const Center(
-          child: Text('Producto no encontrado'),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: AppColors.surfacePrimary,
       appBar: AppBar(
@@ -89,41 +378,138 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Product Image Carousel
-                  _buildImageCarousel(),
-
-                  // Product Information
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage != null
+              ? _buildErrorState()
+              : product == null
+                  ? _buildNotFoundState()
+                  : Column(
                       children: [
-                        _buildProductHeader(),
-                        const SizedBox(height: 20),
-                        _buildProductDescription(),
-                        const SizedBox(height: 24),
-                        _buildReviewsSection(),
-                        const SizedBox(height: 24),
-                        _buildSellerInformation(),
-                        const SizedBox(height: 100), // Space for bottom button
+                        Expanded(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Product Image Carousel
+                                _buildImageCarousel(),
+
+                                // Product Information
+                                Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildProductHeader(),
+                                      const SizedBox(height: 20),
+                                      _buildProductDescription(),
+                                      const SizedBox(height: 24),
+                                      if (product!.tags.isNotEmpty) ...[
+                                        _buildCategoriesSection(),
+                                        const SizedBox(height: 24),
+                                      ],
+                                      _buildReviewsSection(),
+                                      const SizedBox(height: 24),
+                                      if (product!.seller.id != 'default') ...[
+                                        _buildSellerInformation(),
+                                        const SizedBox(height: 24),
+                                      ],
+                                      const SizedBox(height: 100), // Space for bottom button
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Add to Cart Button (Fixed at bottom)
+                        _buildAddToCartButton(),
                       ],
                     ),
-                  ),
-                ],
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error al cargar el producto',
+              style: AppTypography.h3.copyWith(
+                color: AppColors.textPrimary,
               ),
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              errorMessage ?? 'Ocurrió un error inesperado',
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadProduct,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.persianIndigo,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // Add to Cart Button (Fixed at bottom)
-          _buildAddToCartButton(),
-        ],
+  Widget _buildNotFoundState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Producto no encontrado',
+              style: AppTypography.h3.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'El producto que buscas no está disponible',
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => context.pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.persianIndigo,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Volver'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -149,19 +535,31 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     _currentImageIndex = index;
                   });
                 },
-                itemCount: images.length,
+                itemCount: images.isEmpty ? 1 : images.length,
                 itemBuilder: (context, index) {
+                  if (images.isEmpty || images[index].isEmpty) {
+                    return _buildPlaceholderImage();
+                  }
+
                   return Container(
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-                      color: AppColors.surfaceSecondary,
                     ),
-                    child: Center(
-                      child: Icon(
-                        _getProductIcon(product!.category),
-                        size: 120,
-                        color: AppColors.persianIndigo.withOpacity(0.6),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+                      child: CachedNetworkImage(
+                        imageUrl: images[index],
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: AppColors.surfaceSecondary,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.persianIndigo,
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => _buildPlaceholderImage(),
                       ),
                     ),
                   );
@@ -195,6 +593,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  Widget _buildPlaceholderImage() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+        color: AppColors.surfaceSecondary,
+      ),
+      child: Center(
+        child: Icon(
+          Icons.shopping_bag_outlined,
+          size: 120,
+          color: AppColors.persianIndigo.withOpacity(0.6),
+        ),
+      ),
+    );
+  }
+
   Widget _buildProductHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,12 +621,71 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          product!.formattedPrice,
-          style: AppTypography.h1.copyWith(
-            color: AppColors.persianIndigo,
-            fontWeight: FontWeight.bold,
+        
+        // Price display with discount support
+        if (product!.hasValidDiscount) ...[
+          Row(
+            children: [
+              Text(
+                product!.formattedDiscountPrice,
+                style: AppTypography.h1.copyWith(
+                  color: AppColors.persianIndigo,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  product!.formattedDiscountPercentage,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 4),
+          Text(
+            product!.formattedPrice,
+            style: AppTypography.bodyLarge.copyWith(
+              color: AppColors.textSecondary,
+              decoration: TextDecoration.lineThrough,
+            ),
+          ),
+        ] else ...[
+          Text(
+            product!.formattedPrice,
+            style: AppTypography.h1.copyWith(
+              color: AppColors.persianIndigo,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+        
+        // Stock status
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Icon(
+              product!.inStock ? Icons.check_circle : Icons.cancel,
+              size: 20,
+              color: product!.inStock ? AppColors.success : AppColors.error,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              product!.inStock ? 'En stock' : 'Agotado',
+              style: AppTypography.bodyMedium.copyWith(
+                color: product!.inStock ? AppColors.success : AppColors.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -229,121 +702,209 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             height: 1.5,
           ),
         ),
-        if (product!.tags.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: product!.tags.map((tag) {
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.persianIndigo.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  tag,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.persianIndigo,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
       ],
     );
   }
 
-  Widget _buildReviewsSection() {
+  Widget _buildCategoriesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Opiniones',
+          'Etiquetas',
           style: AppTypography.h3.copyWith(
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
           ),
         ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: product!.tags.map((tag) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceSecondary,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.borderColor,
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                tag, // display the name of the tag
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewsSection() {
+    final stats = reviewStats;
+    final totalReviews = stats?.totalReviews ?? 0;
+    final avgRating = stats?.averageRating ?? 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Opiniones',
+              style: AppTypography.h3.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            if (myReview != null)
+              TextButton.icon(
+                onPressed: () => _showReviewDialog(existingReview: myReview),
+                icon: const Icon(Icons.edit, size: 18),
+                label: const Text('Editar'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.persianIndigo,
+                ),
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: () => _showReviewDialog(),
+                icon: const Icon(Icons.rate_review, size: 18),
+                label: const Text('Escribir opinión'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.persianIndigo,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+              ),
+          ],
+        ),
         const SizedBox(height: 16),
 
         // Rating Summary
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceSecondary,
-            borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-          ),
-          child: Row(
-            children: [
-              // Average Rating
-              Column(
+        if (stats != null && totalReviews > 0)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSecondary,
+              borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+            ),
+            child: Row(
+              children: [
+                // Average Rating
+                Column(
+                  children: [
+                    Text(
+                      avgRating.toStringAsFixed(1),
+                      style: AppTypography.h1.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        fontSize: 48,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: List.generate(5, (index) {
+                        return Icon(
+                          index < avgRating.floor()
+                              ? Icons.star
+                              : index < avgRating
+                                  ? Icons.star_half
+                                  : Icons.star_border,
+                          color: AppColors.warning,
+                          size: 20,
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$totalReviews ${totalReviews == 1 ? 'opinión' : 'opiniones'}',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(width: 24),
+
+                // Rating Breakdown
+                Expanded(
+                  child: Column(
+                    children: [
+                      for (int i = 5; i >= 1; i--)
+                        _buildRatingBar(i, stats.getPercentage(i)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSecondary,
+              borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+            ),
+            child: Center(
+              child: Column(
                 children: [
+                  Icon(
+                    Icons.rate_review_outlined,
+                    size: 48,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(height: 12),
                   Text(
-                    product!.rating.toStringAsFixed(1),
-                    style: AppTypography.h1.copyWith(
-                      fontWeight: FontWeight.bold,
+                    'Sé el primero en opinar',
+                    style: AppTypography.bodyLarge.copyWith(
                       color: AppColors.textPrimary,
-                      fontSize: 48,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: List.generate(5, (index) {
-                      return Icon(
-                        index < product!.rating.floor()
-                            ? Icons.star
-                            : index < product!.rating
-                                ? Icons.star_half
-                                : Icons.star_border,
-                        color: AppColors.warning,
-                        size: 20,
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 4),
                   Text(
-                    '${product!.reviewCount} opiniones',
-                    style: AppTypography.bodySmall.copyWith(
+                    'Comparte tu experiencia con este producto',
+                    style: AppTypography.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
-
-              const SizedBox(width: 24),
-
-              // Rating Breakdown
-              Expanded(
-                child: Column(
-                  children: [
-                    for (int i = 5; i >= 1; i--)
-                      _buildRatingBar(i, product!.ratingBreakdown[i] ?? 0),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
 
         // Individual Reviews
-        if (product!.reviews.isNotEmpty) ...[
+        if (reviews.isNotEmpty) ...[
           const SizedBox(height: 20),
-          ...product!.reviews.take(2).map((review) => _buildReviewItem(review)),
+          ...reviews.map((review) => _buildReviewItem(review)),
           
-          if (product!.reviews.length > 2)
-            TextButton(
-              onPressed: () {
-                // TODO: Show all reviews
-              },
-              child: Text(
-                'Ver todas las opiniones (${product!.reviews.length})',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.persianIndigo,
-                  fontWeight: FontWeight.w600,
-                ),
+          if (hasMoreReviews)
+            Center(
+              child: TextButton(
+                onPressed: isLoadingReviews ? null : () => _loadReviews(loadMore: true),
+                child: isLoadingReviews
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        'Ver más opiniones',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.persianIndigo,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
             ),
         ],
@@ -383,14 +944,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildReviewItem(ProductReview review) {
+  Widget _buildReviewItem(Review review) {
+    final isMyReview = myReview?.id == review.id;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surfacePrimary,
         borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-        border: Border.all(color: AppColors.borderColor),
+        border: Border.all(
+          color: isMyReview ? AppColors.persianIndigo : AppColors.borderColor,
+          width: isMyReview ? 2 : 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,24 +966,53 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               CircleAvatar(
                 radius: 20,
                 backgroundColor: AppColors.persianIndigo,
-                child: Text(
-                  review.userName[0].toUpperCase(),
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                backgroundImage: review.customerAvatar != null && review.customerAvatar!.isNotEmpty
+                    ? CachedNetworkImageProvider(review.customerAvatar!)
+                    : null,
+                child: review.customerAvatar == null || review.customerAvatar!.isEmpty
+                    ? Text(
+                        review.customerName.isNotEmpty 
+                            ? review.customerName[0].toUpperCase()
+                            : '?',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      review.userName,
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          review.customerName,
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (isMyReview) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.persianIndigo,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Tú',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     Text(
                       review.formattedDate,
@@ -428,6 +1023,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ],
                 ),
               ),
+              if (isMyReview)
+                IconButton(
+                  onPressed: () => _showReviewDialog(existingReview: review),
+                  icon: const Icon(Icons.edit, size: 20),
+                  color: AppColors.persianIndigo,
+                  tooltip: 'Editar opinión',
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -563,42 +1165,5 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
       ),
     );
-  }
-
-  IconData _getProductIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'pizza':
-        return Icons.local_pizza;
-      case 'frutas':
-        return Icons.apple;
-      case 'panadería':
-        return Icons.bakery_dining;
-      case 'lácteos':
-        return Icons.local_drink;
-      case 'camisetas':
-        return Icons.checkroom;
-      case 'pantalones':
-        return Icons.dry_cleaning;
-      case 'calzado':
-        return Icons.sports_baseball;
-      case 'smartphones':
-        return Icons.smartphone;
-      case 'accesorios':
-        return Icons.headphones;
-      case 'computadoras':
-        return Icons.laptop;
-      case 'suplementos':
-        return Icons.medication;
-      case 'instrumentos':
-        return Icons.medical_services;
-      case 'cuidado personal':
-        return Icons.face;
-      case 'coffee':
-        return Icons.coffee;
-      case 'bebidas':
-        return Icons.local_cafe;
-      default:
-        return Icons.shopping_bag;
-    }
   }
 }

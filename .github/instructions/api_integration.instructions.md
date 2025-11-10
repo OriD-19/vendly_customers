@@ -97,3 +97,44 @@ The Products resource allows you to manage product information. For the customer
 - **GET /products/tags/{tag}**: Retrieve tags associated with products.
 - **GET /products/search**: Search for products by a search term.
 - **GET /products/by-tag/{tag}**: Retrieve products by a specific tag.
+
+## Reviews
+
+- **POST /reviews/** - Create a review
+- **GET, PUT, DELETE  /reviews/{review_id}** - CRUD operations for reviews (only the ones that the current user has written can be modified).
+- **GET /reviews/product/{product_id}** - Get all reviews for product.
+- **GET /reviews/customer/me** - Get all my reviews
+- **GET /reviews/product/{product_id}/stats** - Get a summary of the reviews for a given product (great for the summary section, where the UI tells the user how many 1 star, 2 star, 3 star... reviews the product has).
+- **GET /reviews/product/{product_id}/customer/me** - Get my review for a given product.
+
+### Review Response Structure
+
+```json
+{
+  "id": 1,
+  "product_id": 123,
+  "customer_id": 456,
+  "customer_name": "John Doe",
+  "customer_avatar": "https://example.com/avatar.jpg",
+  "rating": 5,
+  "comment": "Great product!",
+  "created_at": "2025-11-09T10:00:00Z",
+  "updated_at": "2025-11-09T10:00:00Z"
+}
+```
+
+### Review Stats Response Structure
+
+```json
+{
+  "average_rating": 4.5,
+  "total_reviews": 12,
+  "rating_distribution": {
+    "5": 6,
+    "4": 3,
+    "3": 1,
+    "2": 1,
+    "1": 1
+  }
+}
+```

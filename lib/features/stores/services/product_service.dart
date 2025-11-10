@@ -193,6 +193,50 @@ class ProductService {
     }
   }
 
+  /// Fetch a single product by ID
+  static Future<ProductResult> getProductById(int productId) async {
+    try {
+      final response = await ApiConfig.dio.get('/products/$productId');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        if (data is Map<String, dynamic>) {
+          final product = Product.fromJson(data);
+          return ProductResult(
+            success: true,
+            products: [product],
+            total: 1,
+          );
+        } else {
+          return ProductResult(
+            success: false,
+            error: 'Formato de respuesta inesperado',
+            products: [],
+          );
+        }
+      } else {
+        return ProductResult(
+          success: false,
+          error: 'Error al cargar producto. Código: ${response.statusCode}',
+          products: [],
+        );
+      }
+    } on DioException catch (e) {
+      return ProductResult(
+        success: false,
+        error: _handleDioError(e),
+        products: [],
+      );
+    } catch (e) {
+      return ProductResult(
+        success: false,
+        error: 'Error inesperado: ${e.toString()}',
+        products: [],
+      );
+    }
+  }
+
   /// Handle Dio errors and return user-friendly messages
   static String _handleDioError(DioException error) {
     switch (error.type) {
