@@ -17,24 +17,19 @@ class TokenRefreshInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // Only handle 401 Unauthorized errors
     if (err.response?.statusCode == 401) {
-      // Don't try to refresh if the failed request was already a refresh attempt
       if (err.requestOptions.path.contains(_authRefreshEndpoint)) {
-        // Refresh token is also invalid, user needs to login again
         await _clearAuthData();
         return handler.reject(err);
       }
 
-      // Don't try to refresh for login/register endpoints
+      // don't try to refresh for login/register endpoints
       if (err.requestOptions.path.contains('/auth/login') ||
           err.requestOptions.path.contains('/auth/register')) {
         return handler.reject(err);
       }
 
       final requestOptions = err.requestOptions;
-
-      // If already refreshing, queue this request
       if (_isRefreshing) {
         _pendingRequests.add(_RequestOptions(requestOptions, handler));
         return;
@@ -43,30 +38,24 @@ class TokenRefreshInterceptor extends Interceptor {
       _isRefreshing = true;
 
       try {
-        // Attempt to refresh the token
         final newAccessToken = await _refreshToken();
 
         if (newAccessToken != null) {
-          // Update the Authorization header with new token
           requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
 
-          // Retry the original request with new token
           final response = await dio.fetch(requestOptions);
           
-          // Resolve all pending requests with the new token
           _resolvePendingRequests(newAccessToken);
           
           _isRefreshing = false;
           return handler.resolve(response);
         } else {
-          // Refresh failed, clear auth data and reject
           await _clearAuthData();
           _rejectPendingRequests(err);
           _isRefreshing = false;
           return handler.reject(err);
         }
       } catch (e) {
-        // Refresh failed, clear auth data and reject
         await _clearAuthData();
         _rejectPendingRequests(err);
         _isRefreshing = false;

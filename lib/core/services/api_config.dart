@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'token_refresh_interceptor.dart';
 
-/// API Configuration and Dio instance setup
 class ApiConfig {
   static const String baseUrl = 'https://api.lacuponera.store';
   static const Duration connectTimeout = Duration(seconds: 30);
