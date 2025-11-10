@@ -76,15 +76,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 duration: Duration(seconds: 2),
               ),
             );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Conectado'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 1),
-              ),
-            );
-          }
+          } 
         }
       });
 
