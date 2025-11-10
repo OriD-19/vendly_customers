@@ -224,45 +224,87 @@ class Product {
   /// Extract first image from various possible JSON structures
   static String _getFirstImage(Map<String, dynamic> json) {
     // Check for images array
-    if (json['images'] != null &&
-        json['images'] is List &&
-        (json['images'] as List).isNotEmpty) {
+    if (json['images'] != null && json['images'] is List) {
       final images = json['images'] as List;
-      if (images.first is Map && images.first['url'] != null) {
-        return images.first['url'];
-      } else if (images.first is String) {
-        return images.first;
+      
+      if (images.isEmpty) {
+      } else {
+        // If images is an array of strings (URLs)
+        if (images.first is String) {
+          final imageUrl = (images.first as String).trim();
+          if (imageUrl.isNotEmpty) {
+            return imageUrl;
+          }
+        }
+        
+        // If images is an array of objects with url property
+        else if (images.first is Map) {
+          final firstImg = images.first as Map;
+          
+          if (firstImg['url'] != null) {
+            final imageUrl = firstImg['url'].toString().trim();
+            if (imageUrl.isNotEmpty) {
+              return imageUrl;
+            }
+          }
+          
+          // Try other common field names
+          if (firstImg['image_url'] != null) {
+            final imageUrl = firstImg['image_url'].toString().trim();
+            if (imageUrl.isNotEmpty) {
+              return imageUrl;
+            }
+          }
+        }
       }
     }
 
     // Fallback to single image_url field
-    return json['image_url'] ?? json['imageUrl'] ?? '';
+    final fallback = (json['image_url'] ?? json['imageUrl'] ?? '').toString().trim();
+    return fallback;
   }
 
   /// Extract additional images from JSON
   static List<String> _getAdditionalImages(Map<String, dynamic> json) {
+    
     if (json['images'] != null && json['images'] is List) {
       final images = json['images'] as List;
-      return images
+      
+      // Get all images except the first one
+      final additionalImages = images
           .skip(1)
           .map<String>((img) {
+            // If img is a string URL
+            if (img is String) {
+              return img.trim();
+            }
+            // If img is an object with url property
             if (img is Map && img['url'] != null) {
-              return img['url'].toString();
-            } else if (img is String) {
-              return img;
+              return img['url'].toString().trim();
+            }
+            // Try image_url field
+            if (img is Map && img['image_url'] != null) {
+              return img['image_url'].toString().trim();
             }
             return '';
           })
           .where((url) => url.isNotEmpty)
           .toList();
+      
+      return additionalImages;
     }
 
     // Fallback to additional_images field
     if (json['additional_images'] != null ||
         json['additionalImages'] != null) {
-      return (json['additional_images'] ?? json['additionalImages'] ?? [])
-          .map<String>((img) => img.toString())
-          .toList();
+      final additionalImgs = json['additional_images'] ?? json['additionalImages'];
+      if (additionalImgs is List) {
+        final result = additionalImgs
+            .map<String>((img) => img.toString().trim())
+            .where((url) => url.isNotEmpty)
+            .toList();
+        return result;
+      }
     }
 
     return [];

@@ -73,7 +73,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         isLoading = false;
       });
       
-      // Load reviews after product is loaded
       _loadReviews();
       _loadReviewStats();
       _loadMyReview();
@@ -551,15 +550,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       child: CachedNetworkImage(
                         imageUrl: images[index],
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: AppColors.surfaceSecondary,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.persianIndigo,
+                        placeholder: (context, url) {
+                          return Container(
+                            color: AppColors.surfaceSecondary,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.persianIndigo,
+                              ),
                             ),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => _buildPlaceholderImage(),
+                          );
+                        },
+                        errorWidget: (context, url, error) {
+                          return _buildPlaceholderImage();
+                        },
                       ),
                     ),
                   );

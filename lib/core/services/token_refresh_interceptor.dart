@@ -133,7 +133,6 @@ class TokenRefreshInterceptor extends Interceptor {
 
       return null;
     } catch (e) {
-      print('Token refresh failed: $e');
       return null;
     }
   }
