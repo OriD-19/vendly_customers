@@ -1,83 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/auth_required.dart';
 import '../models/cart_item.dart';
-import '../models/cart.dart';
+import '../providers/cart_bloc.dart';
+import '../providers/cart_state.dart';
+import '../providers/cart_event.dart';
 
 /// Cart screen displaying cart items, order summary, and checkout functionality
-class CartScreen extends StatefulWidget {
+class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
-
-  @override
-  State<CartScreen> createState() => _CartScreenState();
-}
-
-class _CartScreenState extends State<CartScreen> {
-  late Cart _cart;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeCart();
-  }
-
-  /// Initialize cart with hard-coded sample data
-  void _initializeCart() {
-    _cart = Cart(
-      items: [
-        const CartItem(
-          id: '1',
-          productId: 'product_1',
-          name: 'Camiseta Clásica',
-          price: 45.00,
-          quantity: 1,
-          size: 'M',
-          imageUrl: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop&crop=center',
-        ),
-        const CartItem(
-          id: '2',
-          productId: 'product_2',
-          name: 'Jeans Ajustados',
-          price: 60.00,
-          quantity: 1,
-          size: 'S',
-          imageUrl: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=200&h=200&fit=crop&crop=center',
-        ),
-        const CartItem(
-          id: '3',
-          productId: 'product_3',
-          name: 'Zapatos Deportivos',
-          price: 15.00,
-          quantity: 2,
-          size: '8',
-          imageUrl: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200&h=200&fit=crop&crop=center',
-        ),
-      ],
-    );
-  }
-
-  /// Update item quantity
-  void _updateItemQuantity(String itemId, int newQuantity) {
-    setState(() {
-      _cart = _cart.updateItemQuantity(itemId, newQuantity);
-    });
-  }
-
-  /// Remove item from cart
-  void _removeItem(String itemId) {
-    setState(() {
-      _cart = _cart.removeItem(itemId);
-    });
-  }
-
-  /// Handle checkout action
-  void _handleCheckout() {
-    // Navigate to checkout screen with current cart
-    context.push('/checkout', extra: _cart);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,16 +36,95 @@ class _CartScreenState extends State<CartScreen> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          BlocBuilder<CartBloc, CartState>(
+            builder: (context, state) {
+              if (state.isEmpty) return const SizedBox.shrink();
+              
+              return IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: AppColors.russianViolet,
+                ),
+                onPressed: () => _showClearCartDialog(context),
+                tooltip: 'Vaciar carrito',
+              );
+            },
+          ),
+        ],
       ),
       body: AuthRequired(
         message: 'Inicia sesión para ver tu carrito de compras',
-        child: _cart.isEmpty ? _buildEmptyCart() : _buildCartContent(),
+        child: BlocConsumer<CartBloc, CartState>(
+          listener: (context, state) {
+            if (state.error != null && state.error!.isNotEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.error!),
+                  backgroundColor: AppColors.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            if (state.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (state.isEmpty) {
+              return _buildEmptyCart(context);
+            }
+
+            return _buildCartContent(context, state);
+          },
+        ),
       ),
     );
   }
 
+  /// Show dialog to confirm clearing cart
+  void _showClearCartDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          '¿Vaciar carrito?',
+          style: AppTypography.h3,
+        ),
+        content: Text(
+          'Se eliminarán todos los productos del carrito',
+          style: AppTypography.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              context.read<CartBloc>().add(const ClearCart());
+              Navigator.pop(dialogContext);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Vaciar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Handle checkout action
+  void _handleCheckout(BuildContext context, CartState state) {
+    // Navigate to checkout screen with current cart
+    context.push('/checkout', extra: state.cart);
+  }
+
   /// Build empty cart state
-  Widget _buildEmptyCart() {
+  Widget _buildEmptyCart(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -153,34 +167,31 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   /// Build cart content with items and summary
-  Widget _buildCartContent() {
+  Widget _buildCartContent(BuildContext context, CartState state) {
     return Column(
       children: [
         // Cart items list
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: _cart.items.length,
+            itemCount: state.items.length,
             itemBuilder: (context, index) {
-              final item = _cart.items[index];
-              return _CartItemCard(
-                item: item,
-                onQuantityChanged: (newQuantity) => 
-                    _updateItemQuantity(item.id, newQuantity),
-                onRemove: () => _removeItem(item.id),
-              );
+              final item = state.items[index];
+              return _CartItemCard(item: item);
             },
           ),
         ),
         
         // Order summary and checkout
-        _buildOrderSummary(),
+        _buildOrderSummary(context, state),
       ],
     );
   }
 
   /// Build order summary section
-  Widget _buildOrderSummary() {
+  Widget _buildOrderSummary(BuildContext context, CartState state) {
+    final cart = state.cart;
+    
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -210,17 +221,17 @@ class _CartScreenState extends State<CartScreen> {
           ),
           const SizedBox(height: 16),
           
-          _buildSummaryRow('Subtotal', '\$${_cart.subtotal.toStringAsFixed(2)}'),
+          _buildSummaryRow('Subtotal', '\$${cart.subtotal.toStringAsFixed(2)}'),
           const SizedBox(height: 8),
-          _buildSummaryRow('Envío', '\$${_cart.shippingCost.toStringAsFixed(2)}'),
+          _buildSummaryRow('Envío', '\$${cart.shippingCost.toStringAsFixed(2)}'),
           const SizedBox(height: 8),
-          _buildSummaryRow('Impuestos', '\$${_cart.taxAmount.toStringAsFixed(2)}'),
+          _buildSummaryRow('Impuestos', '\$${cart.taxAmount.toStringAsFixed(2)}'),
           
           const Divider(height: 24),
           
           _buildSummaryRow(
             'Total', 
-            '\$${_cart.total.toStringAsFixed(2)}',
+            '\$${cart.total.toStringAsFixed(2)}',
             isTotal: true,
           ),
           
@@ -230,7 +241,7 @@ class _CartScreenState extends State<CartScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _handleCheckout,
+              onPressed: () => _handleCheckout(context, state),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.persianIndigo,
                 foregroundColor: Colors.white,
@@ -282,13 +293,9 @@ class _CartScreenState extends State<CartScreen> {
 class _CartItemCard extends StatelessWidget {
   const _CartItemCard({
     required this.item,
-    required this.onQuantityChanged,
-    required this.onRemove,
   });
 
   final CartItem item;
-  final ValueChanged<int> onQuantityChanged;
-  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -375,7 +382,9 @@ class _CartItemCard extends StatelessWidget {
               children: [
                 _QuantityButton(
                   icon: Icons.remove,
-                  onPressed: () => onQuantityChanged(item.quantity - 1),
+                  onPressed: () => context.read<CartBloc>().add(
+                    DecrementItemQuantity(item.id),
+                  ),
                 ),
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -389,7 +398,9 @@ class _CartItemCard extends StatelessWidget {
                 ),
                 _QuantityButton(
                   icon: Icons.add,
-                  onPressed: () => onQuantityChanged(item.quantity + 1),
+                  onPressed: () => context.read<CartBloc>().add(
+                    IncrementItemQuantity(item.id),
+                  ),
                 ),
               ],
             ),

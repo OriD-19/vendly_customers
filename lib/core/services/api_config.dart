@@ -56,7 +56,7 @@ class ApiConfig {
   static const String authMe = '/auth/me';
 
   // Stores endpoints
-  static const String stores = '/stores';
+  static const String stores = '/stores/';
   static String storeById(int id) => '/stores/$id';
   static String storeProducts(int id) => '/stores/$id/products';
 

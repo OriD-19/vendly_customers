@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_theme.dart';
@@ -8,6 +9,8 @@ import '../models/product.dart';
 import '../models/review.dart';
 import '../services/product_service.dart';
 import '../services/review_service.dart';
+import '../../cart/providers/cart_bloc.dart';
+import '../../cart/providers/cart_event.dart';
 
 /// Product detail screen showing full product information
 class ProductDetailScreen extends StatefulWidget {
@@ -1140,11 +1143,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           child: ElevatedButton(
             onPressed: product!.inStock
                 ? () {
+                    // Add product to cart using CartBloc
+                    context.read<CartBloc>().add(
+                      AddToCart(
+                        productId: product!.id.toString(),
+                        name: product!.name,
+                        price: product!.hasValidDiscount 
+                            ? (product!.discountPrice ?? product!.price)
+                            : product!.price,
+                        imageUrl: product!.imageUrl,
+                      ),
+                    );
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('${product!.name} agregado al carrito'),
                         behavior: SnackBarBehavior.floating,
                         backgroundColor: AppColors.persianIndigo,
+                        action: SnackBarAction(
+                          label: 'Ver Carrito',
+                          textColor: Colors.white,
+                          onPressed: () => context.go('/cart'),
+                        ),
                       ),
                     );
                   }

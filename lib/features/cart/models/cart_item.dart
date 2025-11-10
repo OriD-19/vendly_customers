@@ -73,4 +73,10 @@ class CartItem {
       color: map['color'],
     );
   }
+
+  /// JSON serialization (alias for toMap)
+  Map<String, dynamic> toJson() => toMap();
+
+  /// JSON deserialization (alias for fromMap)
+  factory CartItem.fromJson(Map<String, dynamic> json) => CartItem.fromMap(json);
 }
