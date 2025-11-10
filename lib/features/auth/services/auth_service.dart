@@ -152,7 +152,6 @@ class AuthService {
     }
   }
 
-  /// Logout current user
   static Future<void> logout() async {
     try {
       await ApiConfig.dio.post(ApiConfig.authLogout);
@@ -174,9 +173,9 @@ class AuthService {
     return await _getUser();
   }
 
-  /// Forgot password (to be implemented)
+  /// forgot password - not implemented :P
   static Future<bool> forgotPassword(String email) async {
-    // TODO: Implement forgot password API call
+    // TODO: finish him!
     await Future.delayed(const Duration(seconds: 1));
     return true;
   }
@@ -236,32 +235,27 @@ class AuthService {
     }
   }
 
-  /// Save authentication token
   static Future<void> _saveAuthToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
   }
 
-  /// Get authentication token
   static Future<String?> _getAuthToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
   }
 
-  /// Save refresh token
   static Future<void> _saveRefreshToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_refreshTokenKey, token);
   }
 
-  /// Save user data
   static Future<void> _saveUser(User user) async {
     final prefs = await SharedPreferences.getInstance();
     final userJson = jsonEncode(user.toJson());
     await prefs.setString(_userKey, userJson);
   }
 
-  /// Get user data
   static Future<User?> _getUser() async {
     final prefs = await SharedPreferences.getInstance();
     final userData = prefs.getString(_userKey);
@@ -276,7 +270,6 @@ class AuthService {
     return null;
   }
 
-  /// Clear all authentication data
   static Future<void> _clearAuthData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);

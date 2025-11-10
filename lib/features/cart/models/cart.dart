@@ -12,33 +12,26 @@ class Cart {
   final double shippingCost;
   final double taxRate;
 
-  /// Calculate subtotal (sum of all item totals)
   double get subtotal {
     return items.fold(0.0, (total, item) => total + item.totalPrice);
   }
 
-  /// Calculate tax amount based on subtotal
   double get taxAmount {
     return subtotal * taxRate;
   }
 
-  /// Calculate total including shipping and tax
   double get total {
     return subtotal + shippingCost + taxAmount;
   }
 
-  /// Get total number of items in cart
   int get itemCount {
     return items.fold(0, (count, item) => count + item.quantity);
   }
 
-  /// Check if cart is empty
   bool get isEmpty => items.isEmpty;
 
-  /// Check if cart is not empty
   bool get isNotEmpty => items.isNotEmpty;
 
-  /// Create a copy of cart with updated items
   Cart copyWith({
     List<CartItem>? items,
     double? shippingCost,
@@ -51,7 +44,6 @@ class Cart {
     );
   }
 
-  /// Add item to cart or update quantity if item already exists
   Cart addItem(CartItem newItem) {
     final existingIndex = items.indexWhere((item) => 
         item.productId == newItem.productId && 
@@ -59,7 +51,6 @@ class Cart {
         item.color == newItem.color);
 
     if (existingIndex >= 0) {
-      // Update existing item quantity
       final updatedItems = List<CartItem>.from(items);
       updatedItems[existingIndex] = updatedItems[existingIndex].copyWith(
         quantity: updatedItems[existingIndex].quantity + newItem.quantity,
@@ -71,7 +62,6 @@ class Cart {
     }
   }
 
-  /// Update item quantity
   Cart updateItemQuantity(String itemId, int newQuantity) {
     if (newQuantity <= 0) {
       return removeItem(itemId);
@@ -87,18 +77,15 @@ class Cart {
     return copyWith(items: updatedItems);
   }
 
-  /// Remove item from cart
   Cart removeItem(String itemId) {
     final updatedItems = items.where((item) => item.id != itemId).toList();
     return copyWith(items: updatedItems);
   }
 
-  /// Clear all items from cart
   Cart clear() {
     return copyWith(items: []);
   }
 
-  /// Convert to map for serialization
   Map<String, dynamic> toMap() {
     return {
       'items': items.map((item) => item.toMap()).toList(),
@@ -107,7 +94,6 @@ class Cart {
     };
   }
 
-  /// Create from map for deserialization
   factory Cart.fromMap(Map<String, dynamic> map) {
     return Cart(
       items: (map['items'] as List<dynamic>?)
@@ -118,6 +104,5 @@ class Cart {
     );
   }
 
-  /// Create empty cart
   static Cart empty() => const Cart(items: []);
 }

@@ -148,7 +148,6 @@ class AppRouter {
         ],
       ),
 
-      // category products route (outside shell for proper navigation stack)
       GoRoute(
         name: 'category-products',
         path: '/category/:categoryId/products',

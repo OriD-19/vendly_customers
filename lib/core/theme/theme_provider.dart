@@ -21,12 +21,9 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
           (mode) => mode.toString() == themeModeString,
           orElse: () => ThemeMode.system,
         );
-        print('🎨 Theme loaded from storage: $state');
       } else {
-        print('🎨 No saved theme, using system default');
       }
     } catch (e) {
-      print('❌ Error loading theme mode: $e');
     }
   }
 
@@ -35,31 +32,25 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_themeModeKey, mode.toString());
-      print('💾 Theme saved: $mode');
     } catch (e) {
-      print('❌ Error saving theme mode: $e');
     }
   }
 
-  /// Set theme to light mode
   void setLightMode() {
     state = ThemeMode.light;
     _saveThemeMode(ThemeMode.light);
   }
 
-  /// Set theme to dark mode
   void setDarkMode() {
     state = ThemeMode.dark;
     _saveThemeMode(ThemeMode.dark);
   }
 
-  /// Set theme to system mode (follows device settings)
   void setSystemMode() {
     state = ThemeMode.system;
     _saveThemeMode(ThemeMode.system);
   }
 
-  /// Toggle between light and dark (skips system mode)
   void toggleTheme() {
     if (state == ThemeMode.light) {
       setDarkMode();
@@ -68,7 +59,6 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     }
   }
 
-  /// Check if currently using dark theme
   bool isDarkMode(BuildContext context) {
     if (state == ThemeMode.system) {
       return MediaQuery.of(context).platformBrightness == Brightness.dark;
@@ -76,7 +66,6 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     return state == ThemeMode.dark;
   }
 
-  /// Get user-friendly name for current theme mode
   String get themeName {
     switch (state) {
       case ThemeMode.light:
@@ -88,7 +77,6 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     }
   }
 
-  /// Get icon for current theme mode
   IconData get themeIcon {
     switch (state) {
       case ThemeMode.light:
@@ -101,7 +89,6 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   }
 }
 
-/// Provider for theme mode
 final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>(
   (ref) => ThemeModeNotifier(),
 );

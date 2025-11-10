@@ -14,22 +14,16 @@ class CartState extends Equatable {
   final bool isLoading;
   final String? error;
 
-  /// Get the current cart object
   Cart get cart => Cart(items: items);
 
-  /// Check if cart is empty
   bool get isEmpty => items.isEmpty;
 
-  /// Get total number of items in cart
   int get itemCount => items.fold(0, (sum, item) => sum + item.quantity);
 
-  /// Get subtotal amount
   double get subtotal => cart.subtotal;
 
-  /// Get total amount
   double get total => cart.total;
 
-  /// Copy state with new values
   CartState copyWith({
     List<CartItem>? items,
     bool? isLoading,

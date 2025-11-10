@@ -2,9 +2,7 @@ import 'package:dio/dio.dart';
 import '../../../core/services/api_config.dart';
 import '../models/product.dart';
 
-/// Service for fetching products from the API
 class ProductService {
-  /// Fetch products by store ID
   static Future<ProductResult> getProductsByStore({
     required int storeId,
     int skip = 0,
@@ -22,7 +20,6 @@ class ProductService {
       if (response.statusCode == 200) {
         final data = response.data;
         
-        // Handle both single object and array responses
         List<dynamic> productsJson;
         if (data is List) {
           productsJson = data;
@@ -67,7 +64,6 @@ class ProductService {
     }
   }
 
-  /// Fetch products by category ID
   static Future<ProductResult> getProductsByCategory({
     required int categoryId,
     int skip = 0,
@@ -130,7 +126,6 @@ class ProductService {
     }
   }
 
-  /// Search products across all categories
   static Future<ProductResult> searchProducts({
     required String query,
     int skip = 0,
@@ -193,7 +188,6 @@ class ProductService {
     }
   }
 
-  /// Fetch a single product by ID
   static Future<ProductResult> getProductById(int productId) async {
     try {
       final response = await ApiConfig.dio.get('/products/$productId');

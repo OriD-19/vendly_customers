@@ -29,7 +29,6 @@ class VendlyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch theme mode from provider
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
