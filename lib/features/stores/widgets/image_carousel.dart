@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
@@ -78,26 +79,75 @@ class _ImageCarouselState extends State<ImageCarousel> {
   }
 
   Widget _buildImageItem(String imageUrl) {
+    
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(
         top: Radius.circular(AppTheme.borderRadiusLarge),
       ),
-      child: CachedNetworkImage(
-        imageUrl: imageUrl,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        placeholder: (context, url) => Container(
+      child: kIsWeb
+          ? _buildWebImage(imageUrl)
+          : _buildMobileImage(imageUrl),
+    );
+  }
+
+  /// Build image for web platform (supports WebP)
+  Widget _buildWebImage(String imageUrl) {
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: widget.height,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) {
+          return child;
+        }
+        
+        final progress = loadingProgress.expectedTotalBytes != null
+            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+            : null;
+            
+        
+        return Container(
+          color: AppColors.surfaceSecondary,
+          child: Center(
+            child: CircularProgressIndicator(
+              value: progress,
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        String errorMsg = error.toString();
+        if (errorMsg.contains('statusCode: 0') || errorMsg.contains('NetworkImageLoadException')) {
+          errorMsg = 'CORS Error: S3 bucket needs CORS configuration.\nCheck console for details.';
+        }
+        
+        return _buildPlaceholder(errorMessage: errorMsg);
+      },
+    );
+  }
+
+  /// Build image for mobile platforms (uses caching)
+  Widget _buildMobileImage(String imageUrl) {
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      placeholder: (context, url) {
+        return Container(
           color: AppColors.surfaceSecondary,
           child: const Center(
             child: CircularProgressIndicator(),
           ),
-        ),
-        errorWidget: (context, url, error) => _buildPlaceholder(),
-      ),
+        );
+      },
+      errorWidget: (context, url, error) {
+        return _buildPlaceholder(errorMessage: error.toString());
+      },
     );
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder({String? errorMessage}) {
     return Container(
       height: widget.height,
       decoration: BoxDecoration(
@@ -107,23 +157,42 @@ class _ImageCarouselState extends State<ImageCarousel> {
         ),
       ),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.store,
-              size: 48,
-              color: AppColors.textTertiary,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Sin imagen',
-              style: TextStyle(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                errorMessage != null ? Icons.broken_image : Icons.store,
+                size: 48,
                 color: AppColors.textTertiary,
-                fontSize: 14,
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                errorMessage != null ? 'Error al cargar imagen' : 'Sin imagen',
+                style: TextStyle(
+                  color: AppColors.textTertiary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (errorMessage != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  errorMessage.length > 100 
+                      ? '${errorMessage.substring(0, 100)}...' 
+                      : errorMessage,
+                  style: TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 10,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

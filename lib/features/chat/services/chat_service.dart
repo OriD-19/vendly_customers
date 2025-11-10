@@ -37,18 +37,14 @@ class ChatService {
   /// Load historical messages from database
   Future<List<ChatMessage>> loadMessages(int storeId) async {
     try {
-      print('📖 Cargando mensajes históricos de la tienda $storeId...');
       final result = await ChatRepository.getMessages(storeId: storeId);
 
       if (result.success) {
-        print('✅ ${result.messages.length} mensajes cargados de la base de datos');
         return result.messages;
       } else {
-        print('⚠️ Error al cargar mensajes: ${result.error}');
         return [];
       }
     } catch (e) {
-      print('❌ Error al cargar mensajes históricos: $e');
       return [];
     }
   }
@@ -71,10 +67,6 @@ class ChatService {
       // Build WebSocket URL
       final wsUrl = 'ws://localhost:8000/chat/ws/$storeId?token=$token';
       
-      print('🔌 Intentando conectar a WebSocket: $wsUrl');
-      print('📝 Token (primeros 20 caracteres): ${token.substring(0, token.length > 20 ? 20 : token.length)}...');
-      print('🌐 Plataforma: ${kIsWeb ? "Web" : "Mobile/Desktop"}');
-
       // Create WebSocket connection (platform-agnostic)
       final uri = Uri.parse(wsUrl);
       _channel = WebSocketChannel.connect(uri);
@@ -83,16 +75,12 @@ class ChatService {
       // Listen to incoming messages
       _channel!.stream.listen(
         (data) {
-          print('📨 Mensaje recibido: $data');
           _handleIncomingMessage(data);
         },
         onError: (error) {
-          print('❌ WebSocket error: $error');
-          print('   Error type: ${error.runtimeType}');
           _handleDisconnection();
         },
         onDone: () {
-          print('🔌 WebSocket connection closed by server');
           _handleDisconnection();
         },
         cancelOnError: false,
@@ -104,10 +92,7 @@ class ChatService {
       // Set connected status AFTER stream is set up
       _isConnected = true;
       _connectionController!.add(true);
-      print('✅ WebSocket conectado a la tienda $storeId - Estado: $_isConnected');
     } catch (e, stackTrace) {
-      print('❌ Error al conectar WebSocket: $e');
-      print('Stack trace: $stackTrace');
       _handleDisconnection();
       rethrow;
     }
@@ -119,14 +104,10 @@ class ChatService {
       final jsonData = json.decode(data as String) as Map<String, dynamic>;
       final message = WebSocketMessage.fromJson(jsonData);
       
-      print('📥 Procesando mensaje tipo: ${message.type}');
-
       switch (message.type) {
         case 'new_message':
-          print('   Datos del mensaje: ${message.data}');
           try {
             final chatMessage = ChatMessage.fromJson(message.data);
-            print('   ✅ Mensaje parseado correctamente');
             _messageController!.add(chatMessage);
           } catch (e) {
             print('   ❌ Error al parsear mensaje: $e');
@@ -146,15 +127,12 @@ class ChatService {
 
         case 'read_receipt':
           // Handle read receipts if needed
-          print('Read receipt: ${message.data}');
           break;
 
         default:
-          print('⚠️ Unknown message type: ${message.type}');
       }
     } catch (e, stackTrace) {
-      print('❌ Error handling incoming message: $e');
-      print('Stack trace: $stackTrace');
+      print('   ❌ Error al manejar mensaje entrante: $e');
     }
   }
 
@@ -182,7 +160,6 @@ class ChatService {
         status: 'sending',
       );
 
-      print('📤 Agregando mensaje optimista a la UI');
       _messageController!.add(optimisticMessage);
 
       // 2. Send via WebSocket for real-time delivery
@@ -197,12 +174,9 @@ class ChatService {
       );
 
       final jsonMessage = json.encode(messageData.toJson());
-      print('📤 Enviando mensaje via WebSocket: $jsonMessage');
       _channel!.sink.add(jsonMessage);
-      print('✅ Mensaje enviado via WebSocket');
 
       // 3. Persist to database via HTTP
-      print('💾 Guardando mensaje en la base de datos...');
       final result = await ChatRepository.sendMessage(
         content: content,
         storeId: _currentStoreId!,
@@ -211,15 +185,7 @@ class ChatService {
         isFromCustomer: true,
       );
 
-      if (result.success && result.message != null) {
-        print('✅ Mensaje persistido en la base de datos con ID: ${result.message!.id}');
-        // The server might echo this back via WebSocket, or we rely on the optimistic update
-      } else {
-        print('⚠️ Error al persistir mensaje: ${result.error}');
-        // Don't throw - the message was already sent via WebSocket and shown optimistically
-      }
     } catch (e) {
-      print('❌ Error al enviar mensaje: $e');
       rethrow;
     }
   }
@@ -266,11 +232,9 @@ class ChatService {
 
   /// Handle disconnection
   void _handleDisconnection() {
-    print('⚠️ _handleDisconnection llamado - Estado anterior: $_isConnected');
     _isConnected = false;
     _currentStoreId = null;
     _connectionController!.add(false);
-    print('   Estado actual: $_isConnected');
   }
 
   /// Disconnect from WebSocket

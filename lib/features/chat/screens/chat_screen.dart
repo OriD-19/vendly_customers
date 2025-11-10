@@ -49,20 +49,17 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       // 1. Load historical messages from database
-      print('📖 Cargando mensajes históricos...');
       final historicalMessages = await _chatService.loadMessages(storeId);
       if (mounted && historicalMessages.isNotEmpty) {
         setState(() {
           _messages.addAll(historicalMessages);
         });
         _scrollToBottom();
-        print('✅ ${historicalMessages.length} mensajes históricos cargados');
       }
 
       // 2. Listen to connection status BEFORE connecting
       _chatService.connectionStatus.listen((isConnected) {
         if (mounted) {
-          print('🔄 Estado de conexión actualizado en UI: $isConnected');
           setState(() {
             _isConnected = isConnected;
           });
@@ -141,7 +138,6 @@ class _ChatScreenState extends State<ChatScreen> {
       
       // 6. Manually check connection status after connecting
       if (mounted && _chatService.isConnected) {
-        print('✅ Actualizando UI con estado conectado');
         setState(() {
           _isConnected = true;
         });

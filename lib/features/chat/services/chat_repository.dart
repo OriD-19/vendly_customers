@@ -62,8 +62,6 @@ class ChatRepository {
         'is_from_customer': isFromCustomer,
       };
 
-      print('📤 Enviando mensaje HTTP: $requestData');
-
       final response = await ApiConfig.dio.post(
         '/chat/messages',
         data: requestData,
@@ -72,8 +70,6 @@ class ChatRepository {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final messageData = response.data as Map<String, dynamic>;
         final message = ChatMessage.fromJson(messageData);
-
-        print('✅ Mensaje guardado en la base de datos');
 
         return ChatMessageResult(
           success: true,

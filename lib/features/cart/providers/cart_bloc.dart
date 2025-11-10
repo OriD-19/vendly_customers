@@ -196,7 +196,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       final itemsJson = items.map((item) => item.toJson()).toList();
       await prefs.setString(_cartStorageKey, json.encode(itemsJson));
     } catch (e) {
-      // Log error but don't throw - cart still works in memory
       print('Error saving cart to storage: $e');
     }
   }
