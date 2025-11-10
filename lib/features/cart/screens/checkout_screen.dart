@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/cart.dart';
+import '../../orders/models/order_request.dart';
+import '../../orders/services/order_service.dart';
+import '../providers/cart_bloc.dart';
+import '../providers/cart_event.dart';
 
 /// Checkout screen for payment and shipping information
 class CheckoutScreen extends StatefulWidget {
@@ -54,7 +59,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   /// Process the order
-  void _processOrder() async {
+  Future<void> _processOrder() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -63,13 +68,71 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _isProcessing = true;
     });
 
-    // Simulate processing delay
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // Prepare order products from cart items
+      final orderProducts = widget.cart.items.map((item) {
+        return OrderProductItem(
+          productId: int.tryParse(item.productId) ?? 0,
+          quantity: item.quantity,
+        );
+      }).toList();
 
-    if (!mounted) return;
+      // Create order request
+      final orderRequest = CreateOrderRequest(
+        shippingAddress: _addressController.text.trim(),
+        shippingCity: _cityController.text.trim(),
+        shippingPostalCode: _zipController.text.trim(),
+        shippingCountry: 'El Salvador', // Default country
+        products: orderProducts,
+      );
 
-    // Navigate to confirmation screen
-    context.push('/checkout/confirmation');
+      // Submit order to API
+      final result = await OrderService.createOrder(orderRequest);
+
+      if (!mounted) return;
+
+      if (result.success && result.order != null) {
+        // Clear the cart after successful order
+        context.read<CartBloc>().add(const ClearCart());
+
+        // Navigate to confirmation screen with order details
+        context.go('/checkout/confirmation', extra: {
+          'orderNumber': result.order!.orderNumber,
+          'totalAmount': result.order!.totalAmount,
+          'orderDate': result.order!.createdAt,
+        });
+      } else {
+        // Show error message
+        setState(() {
+          _isProcessing = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.error ?? 'Error al procesar el pedido'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isProcessing = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error inesperado: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   @override

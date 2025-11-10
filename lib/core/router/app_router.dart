@@ -61,7 +61,15 @@ class AppRouter {
         routes: [
           GoRoute(
             path: 'confirmation',
-            builder: (context, state) => const OrderConfirmationScreen(),
+            builder: (context, state) {
+              // Get order details from extra data
+              final orderData = state.extra as Map<String, dynamic>?;
+              return OrderConfirmationScreen(
+                orderNumber: orderData?['orderNumber'] as String?,
+                totalAmount: orderData?['totalAmount'] as double?,
+                orderDate: orderData?['orderDate'] as DateTime?,
+              );
+            },
           ),
         ],
       ),

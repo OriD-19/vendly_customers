@@ -6,7 +6,16 @@ import '../../../core/theme/app_theme.dart';
 
 /// Order confirmation screen showing successful order placement
 class OrderConfirmationScreen extends StatefulWidget {
-  const OrderConfirmationScreen({super.key});
+  const OrderConfirmationScreen({
+    super.key,
+    this.orderNumber,
+    this.totalAmount,
+    this.orderDate,
+  });
+
+  final String? orderNumber;
+  final double? totalAmount;
+  final DateTime? orderDate;
 
   @override
   State<OrderConfirmationScreen> createState() => _OrderConfirmationScreenState();
@@ -18,8 +27,13 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen>
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
 
-  // Generate a random order number
-  final String orderNumber = 'VEN${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+  // Get order number from widget or generate a fallback
+  String get orderNumber => 
+      widget.orderNumber ?? 'VEN${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+  
+  double get totalAmount => widget.totalAmount ?? 0.0;
+  
+  DateTime get orderDate => widget.orderDate ?? DateTime.now();
 
   @override
   void initState() {
