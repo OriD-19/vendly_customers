@@ -1,60 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/auth_required.dart';
 import 'models/order.dart';
-import 'services/orders_service.dart';
+import 'providers/orders_provider.dart';
 
 /// Orders screen - Shows user's order history and active orders
-class OrdersScreen extends StatefulWidget {
+class OrdersScreen extends ConsumerWidget {
   const OrdersScreen({super.key});
 
   @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ordersState = ref.watch(ordersProvider);
 
-class _OrdersScreenState extends State<OrdersScreen> {
-  final OrdersService _ordersService = OrdersService();
-  List<Order> _orders = [];
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadOrders();
-  }
-
-  Future<void> _loadOrders() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    final result = await _ordersService.getOrders();
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        if (result.isSuccess) {
-          _orders = result.orders!;
-        } else {
-          _error = result.error;
-        }
-      });
-    }
-  }
-
-  List<Order> get _activeOrders {
-    return _orders.where((order) => order.isActive).toList();
-  }
-
-  List<Order> get _completedOrders {
-    return _orders.where((order) => order.isCompleted || order.isCanceled).toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Pedidos', style: AppTypography.h3)),
       body: AuthRequired(
@@ -73,22 +32,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
               // Tab Views
               Expanded(
-                child: _isLoading
+                child: ordersState.isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : _error != null
-                        ? _buildErrorView()
+                    : ordersState.error != null && ordersState.error!.isNotEmpty
+                        ? _buildErrorView(context, ref, ordersState.error!)
                         : TabBarView(
                             children: [
                               // Active Orders Tab
                               _ActiveOrdersTab(
-                                orders: _activeOrders,
-                                onRefresh: _loadOrders,
+                                orders: ordersState.activeOrders,
                               ),
 
                               // Order History Tab
                               _OrderHistoryTab(
-                                orders: _completedOrders,
-                                onRefresh: _loadOrders,
+                                orders: ordersState.completedOrders,
                               ),
                             ],
                           ),
@@ -100,7 +57,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  Widget _buildErrorView() {
+  Widget _buildErrorView(BuildContext context, WidgetRef ref, String error) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -114,7 +71,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              _error!,
+              error,
               style: AppTypography.bodyLarge.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -122,7 +79,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _loadOrders,
+              onPressed: () => ref.read(ordersProvider.notifier).retry(),
               icon: const Icon(Icons.refresh),
               label: const Text('Reintentar'),
             ),
@@ -133,17 +90,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 }
 
-class _ActiveOrdersTab extends StatelessWidget {
+class _ActiveOrdersTab extends ConsumerWidget {
   const _ActiveOrdersTab({
     required this.orders,
-    required this.onRefresh,
   });
 
   final List<Order> orders;
-  final VoidCallback onRefresh;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (orders.isEmpty) {
       return Center(
         child: Padding(
@@ -178,14 +133,14 @@ class _ActiveOrdersTab extends StatelessWidget {
     }
 
     return RefreshIndicator(
-      onRefresh: () async => onRefresh(),
+      onRefresh: () => ref.read(ordersProvider.notifier).refresh(),
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: orders.length,
         itemBuilder: (context, index) {
           return Padding(
             padding: EdgeInsets.only(bottom: index < orders.length - 1 ? 16 : 0),
-            child: _OrderCard(order: orders[index], onRefresh: onRefresh),
+            child: _OrderCard(order: orders[index]),
           );
         },
       ),
@@ -193,17 +148,15 @@ class _ActiveOrdersTab extends StatelessWidget {
   }
 }
 
-class _OrderHistoryTab extends StatelessWidget {
+class _OrderHistoryTab extends ConsumerWidget {
   const _OrderHistoryTab({
     required this.orders,
-    required this.onRefresh,
   });
 
   final List<Order> orders;
-  final VoidCallback onRefresh;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (orders.isEmpty) {
       return Center(
         child: Padding(
@@ -238,14 +191,14 @@ class _OrderHistoryTab extends StatelessWidget {
     }
 
     return RefreshIndicator(
-      onRefresh: () async => onRefresh(),
+      onRefresh: () => ref.read(ordersProvider.notifier).refresh(),
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: orders.length,
         itemBuilder: (context, index) {
           return Padding(
             padding: EdgeInsets.only(bottom: index < orders.length - 1 ? 16 : 0),
-            child: _OrderCard(order: orders[index], onRefresh: onRefresh),
+            child: _OrderCard(order: orders[index]),
           );
         },
       ),
@@ -253,24 +206,15 @@ class _OrderHistoryTab extends StatelessWidget {
   }
 }
 
-class _OrderCard extends StatefulWidget {
+class _OrderCard extends ConsumerWidget {
   const _OrderCard({
     required this.order,
-    required this.onRefresh,
   });
 
   final Order order;
-  final VoidCallback onRefresh;
 
-  @override
-  State<_OrderCard> createState() => _OrderCardState();
-}
-
-class _OrderCardState extends State<_OrderCard> {
-  bool _isCanceling = false;
-
-  Color get _statusColor {
-    switch (widget.order.status.toLowerCase()) {
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
       case 'pending':
       case 'confirmed':
         return AppColors.warning;
@@ -287,7 +231,7 @@ class _OrderCardState extends State<_OrderCard> {
     }
   }
 
-  Future<void> _cancelOrder() async {
+  Future<void> _cancelOrder(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -309,28 +253,23 @@ class _OrderCardState extends State<_OrderCard> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !context.mounted) return;
 
-    setState(() => _isCanceling = true);
+    final success = await ref.read(ordersProvider.notifier).cancelOrder(order.id);
 
-    final ordersService = OrdersService();
-    final result = await ordersService.cancelOrder(widget.order.id);
-
-    if (mounted) {
-      setState(() => _isCanceling = false);
-
-      if (result.isSuccess) {
+    if (context.mounted) {
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Pedido cancelado exitosamente'),
             backgroundColor: Colors.green,
           ),
         );
-        widget.onRefresh();
       } else {
+        final error = ref.read(ordersProvider).error;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result.error ?? 'Error al cancelar el pedido'),
+            content: Text(error ?? 'Error al cancelar el pedido'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -338,17 +277,20 @@ class _OrderCardState extends State<_OrderCard> {
     }
   }
 
-  void _showOrderDetails(BuildContext context) {
+  void _showOrderDetails(BuildContext context, Order order) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _OrderDetailsModal(order: widget.order),
+      builder: (context) => _OrderDetailsModal(order: order),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ordersState = ref.watch(ordersProvider);
+    final isCanceling = ordersState.isCancelingOrder && 
+                        ordersState.cancelingOrderId == order.id;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -364,14 +306,14 @@ class _OrderCardState extends State<_OrderCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '#${widget.order.orderNumber}',
+                        '#${order.orderNumber}',
                         style: AppTypography.labelMedium.copyWith(
                           color: AppColors.textTertiary,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${widget.order.itemCount} ${widget.order.itemCount == 1 ? "artículo" : "artículos"}',
+                        '${order.itemCount} ${order.itemCount == 1 ? "artículo" : "artículos"}',
                         style: AppTypography.h4,
                       ),
                     ],
@@ -383,13 +325,13 @@ class _OrderCardState extends State<_OrderCard> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: _statusColor.withOpacity(0.1),
+                    color: _getStatusColor(order.status).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    widget.order.statusText,
+                    order.statusText,
                     style: AppTypography.labelSmall.copyWith(
-                      color: _statusColor,
+                      color: _getStatusColor(order.status),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -397,13 +339,13 @@ class _OrderCardState extends State<_OrderCard> {
               ],
             ),
 
-            if (widget.order.products.isNotEmpty) ...[
+            if (order.products.isNotEmpty) ...[
               const SizedBox(height: 12),
               const Divider(),
               const SizedBox(height: 8),
 
               // Products
-              ...widget.order.products.take(3).map((product) {
+              ...order.products.take(3).map((product) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
@@ -427,11 +369,11 @@ class _OrderCardState extends State<_OrderCard> {
                 );
               }).toList(),
 
-              if (widget.order.products.length > 3)
+              if (order.products.length > 3)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    '+ ${widget.order.products.length - 3} más',
+                    '+ ${order.products.length - 3} más',
                     style: AppTypography.labelSmall.copyWith(
                       color: AppColors.textTertiary,
                     ),
@@ -457,7 +399,7 @@ class _OrderCardState extends State<_OrderCard> {
                       ),
                     ),
                     Text(
-                      widget.order.formattedTotal,
+                      order.formattedTotal,
                       style: AppTypography.h4.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -465,7 +407,7 @@ class _OrderCardState extends State<_OrderCard> {
                   ],
                 ),
                 Text(
-                  widget.order.formattedDate,
+                  order.formattedDate,
                   style: AppTypography.labelSmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -474,7 +416,7 @@ class _OrderCardState extends State<_OrderCard> {
             ),
 
             // Shipping address for active orders
-            if (widget.order.isActive) ...[
+            if (order.isActive) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -486,7 +428,7 @@ class _OrderCardState extends State<_OrderCard> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      widget.order.fullAddress,
+                      order.fullAddress,
                       style: AppTypography.labelSmall.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -499,13 +441,13 @@ class _OrderCardState extends State<_OrderCard> {
             ],
 
             // Action buttons for active orders
-            if (widget.order.isActive && !_isCanceling) ...[
+            if (order.isActive && !isCanceling) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _showOrderDetails(context),
+                      onPressed: () => _showOrderDetails(context, order),
                       icon: const Icon(Icons.receipt_long),
                       label: const Text('Ver detalles'),
                     ),
@@ -513,7 +455,7 @@ class _OrderCardState extends State<_OrderCard> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: _cancelOrder,
+                      onPressed: () => _cancelOrder(context, ref),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
                         side: BorderSide(color: AppColors.error),
@@ -523,7 +465,7 @@ class _OrderCardState extends State<_OrderCard> {
                   ),
                 ],
               ),
-            ] else if (_isCanceling) ...[
+            ] else if (isCanceling) ...[
               const SizedBox(height: 12),
               const Center(
                 child: SizedBox(
@@ -538,7 +480,7 @@ class _OrderCardState extends State<_OrderCard> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () => _showOrderDetails(context),
+                  onPressed: () => _showOrderDetails(context, order),
                   icon: const Icon(Icons.receipt_long),
                   label: const Text('Ver detalles'),
                 ),

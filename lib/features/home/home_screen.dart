@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/vendly_logo.dart';
 import '../../shared/widgets/theme_widgets.dart';
-import '../stores/services/store_service.dart';
-import '../stores/services/store_score_service.dart';
-import '../stores/models/store.dart';
 import '../stores/widgets/store_card.dart';
-import '../categories/services/category_service.dart';
-import '../categories/models/category.dart';
+import '../stores/providers/stores_provider.dart';
+import '../categories/providers/categories_provider.dart';
 import 'widgets/account_drawer.dart';
 
 /// Home screen - Main landing page
@@ -89,7 +87,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
 
             // Store Cards List
-            _StoresList(),
+            const _StoresList(),
 
             const SizedBox(height: 24),
           ],
@@ -126,7 +124,7 @@ class _WelcomeSection extends StatelessWidget {
           Text(
             'Descubre productos increíbles de tus tiendas favoritas',
             style: AppTypography.bodyLarge.copyWith(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
             ),
           ),
         ],
@@ -135,56 +133,8 @@ class _WelcomeSection extends StatelessWidget {
   }
 }
 
-class _CategoriesSection extends StatefulWidget {
+class _CategoriesSection extends ConsumerWidget {
   const _CategoriesSection();
-
-  @override
-  State<_CategoriesSection> createState() => _CategoriesSectionState();
-}
-
-class _CategoriesSectionState extends State<_CategoriesSection> {
-  bool _isLoading = false;
-  List<Category> _categories = [];
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCategories();
-  }
-
-  Future<void> _loadCategories() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final result = await CategoryService.getTopCategories(
-        limit: 5,
-        sortBy: 'count',
-        sortOrder: 'desc',
-      );
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          if (result.success) {
-            _categories = result.categories;
-          } else {
-            _error = result.error ?? 'Error al cargar categorías';
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _error = 'Error de conexión: ${e.toString()}';
-        });
-      }
-    }
-  }
 
   IconData _getIconData(String iconName) {
     switch (iconName) {
@@ -211,20 +161,22 @@ class _CategoriesSectionState extends State<_CategoriesSection> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final categoriesState = ref.watch(categoriesProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Categorías', style: AppTypography.h3),
         const SizedBox(height: 16),
-        if (_isLoading)
+        if (categoriesState.isLoading)
           const Center(
             child: Padding(
               padding: EdgeInsets.all(16.0),
               child: CircularProgressIndicator(),
             ),
           )
-        else if (_error != null)
+        else if (categoriesState.error != null && categoriesState.error!.isNotEmpty)
           Center(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -237,7 +189,7 @@ class _CategoriesSectionState extends State<_CategoriesSection> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _error!,
+                    categoriesState.error!,
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -245,14 +197,14 @@ class _CategoriesSectionState extends State<_CategoriesSection> {
                   ),
                   const SizedBox(height: 8),
                   TextButton(
-                    onPressed: _loadCategories,
+                    onPressed: () => ref.read(categoriesProvider.notifier).retry(),
                     child: const Text('Reintentar'),
                   ),
                 ],
               ),
             ),
           )
-        else if (_categories.isEmpty)
+        else if (categoriesState.categories.isEmpty)
           Center(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -268,7 +220,7 @@ class _CategoriesSectionState extends State<_CategoriesSection> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: _categories.asMap().entries.map((entry) {
+              children: categoriesState.categories.asMap().entries.map((entry) {
                 final index = entry.key;
                 final category = entry.value;
                 final iconName = category.getIconName();
@@ -276,7 +228,7 @@ class _CategoriesSectionState extends State<_CategoriesSection> {
 
                 return Padding(
                   padding: EdgeInsets.only(
-                    right: index < _categories.length - 1 ? 16 : 0,
+                    right: index < categoriesState.categories.length - 1 ? 16 : 0,
                   ),
                   child: GestureDetector(
                     onTap: () {
@@ -288,7 +240,7 @@ class _CategoriesSectionState extends State<_CategoriesSection> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppColors.mauve.withOpacity(0.1),
+                            color: AppColors.mauve.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Icon(
@@ -320,84 +272,21 @@ class _CategoriesSectionState extends State<_CategoriesSection> {
   }
 }
 
-class _StoresList extends StatefulWidget {
-  @override
-  State<_StoresList> createState() => _StoresListState();
-}
-
-class _StoresListState extends State<_StoresList> {
-  bool _isLoading = false;
-  List<Store> _stores = [];
-  String? _error;
+class _StoresList extends ConsumerWidget {
+  const _StoresList();
 
   @override
-  void initState() {
-    super.initState();
-    _loadStores();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final storesState = ref.watch(storesProvider);
 
-  Future<void> _loadStores() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final results = await Future.wait([
-        StoreService.getAllStores(),
-        StoreScoreService.getStoreScores(skip: 0, limit: 100),
-      ]);
-
-      final storeResult = results[0] as StoreResult;
-      final scoreResult = results[1] as StoreScoreResult;
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          if (storeResult.success) {
-            _stores = storeResult.stores;
-            
-            // Apply scores to stores if available
-            if (scoreResult.success) {
-              _stores = _stores.map((store) {
-                final storeId = int.tryParse(store.id);
-                if (storeId != null) {
-                  final score = scoreResult.getScoreForStore(storeId);
-                  if (score != null && score.hasReviews) {
-                    return store.copyWith(
-                      rating: score.averageRating,
-                      reviewCount: score.totalReviews,
-                    );
-                  }
-                }
-                return store;
-              }).toList();
-            }
-          } else {
-            _error = storeResult.error ?? 'Error al cargar tiendas';
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _error = 'Error de conexión: ${e.toString()}';
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (storesState.isLoading) {
       return const Padding(
         padding: EdgeInsets.all(32.0),
         child: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (_error != null) {
+    if (storesState.error != null && storesState.error!.isNotEmpty) {
       return Padding(
         padding: const EdgeInsets.all(16.0),
         child: Center(
@@ -406,7 +295,7 @@ class _StoresListState extends State<_StoresList> {
               Icon(Icons.error_outline, size: 48, color: AppColors.error),
               const SizedBox(height: 16),
               Text(
-                _error!,
+                storesState.error!,
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -414,7 +303,7 @@ class _StoresListState extends State<_StoresList> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _loadStores,
+                onPressed: () => ref.read(storesProvider.notifier).retry(),
                 child: const Text('Reintentar'),
               ),
             ],
@@ -423,7 +312,7 @@ class _StoresListState extends State<_StoresList> {
       );
     }
 
-    if (_stores.isEmpty) {
+    if (storesState.stores.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(32.0),
         child: Center(
@@ -448,12 +337,12 @@ class _StoresListState extends State<_StoresList> {
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
         ),
-        itemCount: _stores.length,
+        itemCount: storesState.stores.length,
         itemBuilder: (context, index) {
           return StoreCard(
-            store: _stores[index],
+            store: storesState.stores[index],
             onTap: () {
-              final storeId = _stores[index].id;
+              final storeId = storesState.stores[index].id;
               final route = '/store/$storeId';
               try {
                 context.pushNamed(

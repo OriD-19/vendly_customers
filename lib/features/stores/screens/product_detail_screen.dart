@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,13 +8,12 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/product.dart';
 import '../models/review.dart';
-import '../services/product_service.dart';
-import '../services/review_service.dart';
+import '../providers/product_detail_provider.dart';
 import '../../cart/providers/cart_bloc.dart';
 import '../../cart/providers/cart_event.dart';
 
 /// Product detail screen showing full product information
-class ProductDetailScreen extends StatefulWidget {
+class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({
     super.key,
     required this.productId,
@@ -22,29 +22,19 @@ class ProductDetailScreen extends StatefulWidget {
   final String productId;
 
   @override
-  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+  ConsumerState<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
-class _ProductDetailScreenState extends State<ProductDetailScreen> {
+class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   late PageController _imageController;
   int _currentImageIndex = 0;
-  Product? product;
-  bool isLoading = true;
-  String? errorMessage;
-  
-  // Review-related state
-  List<Review> reviews = [];
-  ReviewStats? reviewStats;
-  Review? myReview;
-  bool isLoadingReviews = false;
-  int currentReviewPage = 0;
-  bool hasMoreReviews = true;
+  int? _productIdInt;
 
   @override
   void initState() {
     super.initState();
     _imageController = PageController();
-    _loadProduct();
+    _productIdInt = int.tryParse(widget.productId);
   }
 
   @override
@@ -53,103 +43,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _loadProduct() async {
-    setState(() {
-      isLoading = true;
-      errorMessage = null;
-    });
-
-    final productId = int.tryParse(widget.productId);
-    if (productId == null) {
-      setState(() {
-        isLoading = false;
-        errorMessage = 'ID de producto inválido';
-      });
-      return;
-    }
-
-    final result = await ProductService.getProductById(productId);
-
-    if (result.success && result.products.isNotEmpty) {
-      setState(() {
-        product = result.products.first;
-        isLoading = false;
-      });
-      
-      _loadReviews();
-      _loadReviewStats();
-      _loadMyReview();
-    } else {
-      setState(() {
-        errorMessage = result.error ?? 'No se pudo cargar el producto';
-        isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _loadReviews({bool loadMore = false}) async {
-    if (product == null) return;
-
-    setState(() {
-      isLoadingReviews = true;
-    });
-
-    final productId = int.tryParse(widget.productId);
-    if (productId == null) return;
-
-    final skip = loadMore ? reviews.length : 0;
-    final result = await ReviewService.getProductReviews(
-      productId: productId,
-      skip: skip,
-      limit: 10,
-    );
-
-    if (result.success) {
-      setState(() {
-        if (loadMore) {
-          reviews.addAll(result.reviews);
-        } else {
-          reviews = result.reviews;
-        }
-        hasMoreReviews = result.reviews.length >= 10;
-        isLoadingReviews = false;
-      });
-    } else {
-      setState(() {
-        isLoadingReviews = false;
-      });
-    }
-  }
-
-  Future<void> _loadReviewStats() async {
-    if (product == null) return;
-
-    final productId = int.tryParse(widget.productId);
-    if (productId == null) return;
-
-    final result = await ReviewService.getProductReviewStats(productId);
-    if (result.success && result.stats != null) {
-      setState(() {
-        reviewStats = result.stats;
-      });
-    }
-  }
-
-  Future<void> _loadMyReview() async {
-    if (product == null) return;
-
-    final productId = int.tryParse(widget.productId);
-    if (productId == null) return;
-
-    final result = await ReviewService.getMyReviewForProduct(productId);
-    if (result.success && result.reviews.isNotEmpty) {
-      setState(() {
-        myReview = result.reviews.first;
-      });
-    }
-  }
-
   Future<void> _showReviewDialog({Review? existingReview}) async {
+    if (_productIdInt == null) return;
+
     int rating = existingReview?.rating ?? 5;
     final commentController = TextEditingController(text: existingReview?.comment ?? '');
 
@@ -237,14 +133,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   );
 
                   if (confirm == true && mounted) {
-                    final success = await ReviewService.deleteReview(existingReview.id);
+                    final success = await ref.read(productDetailProvider(_productIdInt!).notifier).deleteReview(existingReview.id);
                     if (success && mounted) {
                       Navigator.pop(context, true);
-                      setState(() {
-                        myReview = null;
-                      });
-                      _loadReviews();
-                      _loadReviewStats();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Opinión eliminada'),
@@ -277,24 +168,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                 Navigator.pop(context, true);
 
-                final productId = int.tryParse(widget.productId);
-                if (productId == null) return;
-
                 if (existingReview == null) {
                   // Create new review
-                  final request = CreateReviewRequest(
-                    productId: productId,
+                  final success = await ref.read(productDetailProvider(_productIdInt!).notifier).createReview(
                     rating: rating,
                     comment: commentController.text.trim(),
                   );
-                  final result = await ReviewService.createReview(request);
                   
-                  if (result.success && mounted) {
-                    setState(() {
-                      myReview = result.reviews.first;
-                    });
-                    _loadReviews();
-                    _loadReviewStats();
+                  if (success && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Opinión publicada'),
@@ -303,8 +184,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     );
                   } else if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(result.error ?? 'Error al publicar opinión'),
+                      const SnackBar(
+                        content: Text('Error al publicar opinión'),
                         behavior: SnackBarBehavior.floating,
                         backgroundColor: AppColors.error,
                       ),
@@ -312,21 +193,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   }
                 } else {
                   // Update existing review
-                  final request = UpdateReviewRequest(
+                  final success = await ref.read(productDetailProvider(_productIdInt!).notifier).updateReview(
+                    reviewId: existingReview.id,
                     rating: rating,
                     comment: commentController.text.trim(),
                   );
-                  final result = await ReviewService.updateReview(
-                    reviewId: existingReview.id,
-                    request: request,
-                  );
                   
-                  if (result.success && mounted) {
-                    setState(() {
-                      myReview = result.reviews.first;
-                    });
-                    _loadReviews();
-                    _loadReviewStats();
+                  if (success && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Opinión actualizada'),
@@ -335,8 +208,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     );
                   } else if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(result.error ?? 'Error al actualizar opinión'),
+                      const SnackBar(
+                        content: Text('Error al actualizar opinión'),
                         behavior: SnackBarBehavior.floating,
                         backgroundColor: AppColors.error,
                       ),
@@ -358,6 +231,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_productIdInt == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('Error', style: AppTypography.h3),
+        ),
+        body: _buildInvalidIdState(),
+      );
+    }
+
+    final productState = ref.watch(productDetailProvider(_productIdInt!));
+
     return Scaffold(
       backgroundColor: AppColors.surfacePrimary,
       appBar: AppBar(
@@ -380,11 +264,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ],
       ),
-      body: isLoading
+      body: productState.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
-              ? _buildErrorState()
-              : product == null
+          : productState.error != null && productState.error!.isNotEmpty
+              ? _buildErrorState(productState.error!)
+              : productState.product == null
                   ? _buildNotFoundState()
                   : Column(
                       children: [
@@ -394,7 +278,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 // Product Image Carousel
-                                _buildImageCarousel(),
+                                _buildImageCarousel(productState.product!),
 
                                 // Product Information
                                 Padding(
@@ -402,18 +286,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      _buildProductHeader(),
+                                      _buildProductHeader(productState.product!),
                                       const SizedBox(height: 20),
-                                      _buildProductDescription(),
+                                      _buildProductDescription(productState.product!),
                                       const SizedBox(height: 24),
-                                      if (product!.tags.isNotEmpty) ...[
-                                        _buildCategoriesSection(),
+                                      if (productState.product!.tags.isNotEmpty) ...[
+                                        _buildCategoriesSection(productState.product!),
                                         const SizedBox(height: 24),
                                       ],
-                                      _buildReviewsSection(),
+                                      _buildReviewsSection(productState),
                                       const SizedBox(height: 24),
-                                      if (product!.seller.id != 'default') ...[
-                                        _buildSellerInformation(),
+                                      if (productState.product!.seller.id != 'default') ...[
+                                        _buildSellerInformation(productState.product!),
                                         const SizedBox(height: 24),
                                       ],
                                       const SizedBox(height: 100), // Space for bottom button
@@ -426,13 +310,47 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
 
                         // Add to Cart Button (Fixed at bottom)
-                        _buildAddToCartButton(),
+                        _buildAddToCartButton(productState.product!),
                       ],
                     ),
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildInvalidIdState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'ID de producto inválido',
+              style: AppTypography.h3.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => context.pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.persianIndigo,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Volver'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -453,7 +371,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              errorMessage ?? 'Ocurrió un error inesperado',
+              error,
               textAlign: TextAlign.center,
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
@@ -461,7 +379,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: _loadProduct,
+              onPressed: () {
+                if (_productIdInt != null) {
+                  ref.read(productDetailProvider(_productIdInt!).notifier).retry();
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.persianIndigo,
                 foregroundColor: Colors.white,
@@ -516,8 +438,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildImageCarousel() {
-    final images = product!.allImages;
+  Widget _buildImageCarousel(Product product) {
+    final images = product.allImages;
     
     return Container(
       height: 300,
@@ -615,12 +537,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildProductHeader() {
+  Widget _buildProductHeader(Product product) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          product!.name,
+          product.name,
           style: AppTypography.h2.copyWith(
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -629,11 +551,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         const SizedBox(height: 8),
         
         // Price display with discount support
-        if (product!.hasValidDiscount) ...[
+        if (product.hasValidDiscount) ...[
           Row(
             children: [
               Text(
-                product!.formattedDiscountPrice,
+                product.formattedDiscountPrice,
                 style: AppTypography.h1.copyWith(
                   color: AppColors.persianIndigo,
                   fontWeight: FontWeight.bold,
@@ -643,11 +565,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
+                  color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  product!.formattedDiscountPercentage,
+                  product.formattedDiscountPercentage,
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.error,
                     fontWeight: FontWeight.bold,
@@ -658,7 +580,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            product!.formattedPrice,
+            product.formattedPrice,
             style: AppTypography.bodyLarge.copyWith(
               color: AppColors.textSecondary,
               decoration: TextDecoration.lineThrough,
@@ -666,7 +588,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ] else ...[
           Text(
-            product!.formattedPrice,
+            product.formattedPrice,
             style: AppTypography.h1.copyWith(
               color: AppColors.persianIndigo,
               fontWeight: FontWeight.bold,
@@ -679,15 +601,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         Row(
           children: [
             Icon(
-              product!.inStock ? Icons.check_circle : Icons.cancel,
+              product.inStock ? Icons.check_circle : Icons.cancel,
               size: 20,
-              color: product!.inStock ? AppColors.success : AppColors.error,
+              color: product.inStock ? AppColors.success : AppColors.error,
             ),
             const SizedBox(width: 8),
             Text(
-              product!.inStock ? 'En stock' : 'Agotado',
+              product.inStock ? 'En stock' : 'Agotado',
               style: AppTypography.bodyMedium.copyWith(
-                color: product!.inStock ? AppColors.success : AppColors.error,
+                color: product.inStock ? AppColors.success : AppColors.error,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -697,12 +619,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildProductDescription() {
+  Widget _buildProductDescription(Product product) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          product!.description,
+          product.description,
           style: AppTypography.bodyLarge.copyWith(
             color: AppColors.textSecondary,
             height: 1.5,
@@ -712,7 +634,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildCategoriesSection() {
+  Widget _buildCategoriesSection(Product product) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -727,7 +649,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: product!.tags.map((tag) {
+          children: product.tags.map((tag) {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
@@ -752,8 +674,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildReviewsSection() {
-    final stats = reviewStats;
+  Widget _buildReviewsSection(ProductDetailState productState) {
+    final stats = productState.reviewStats;
+    final reviews = productState.reviews;
+    final myReview = productState.myReview;
+    final isLoadingReviews = productState.isLoadingReviews;
+    final hasMoreReviews = productState.hasMoreReviews;
     final totalReviews = stats?.totalReviews ?? 0;
     final avgRating = stats?.averageRating ?? 0.0;
 
@@ -892,12 +818,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         // Individual Reviews
         if (reviews.isNotEmpty) ...[
           const SizedBox(height: 20),
-          ...reviews.map((review) => _buildReviewItem(review)),
+          ...reviews.map((review) => _buildReviewItem(review, myReview)),
           
           if (hasMoreReviews)
             Center(
               child: TextButton(
-                onPressed: isLoadingReviews ? null : () => _loadReviews(loadMore: true),
+                onPressed: isLoadingReviews 
+                    ? null 
+                    : () {
+                        if (_productIdInt != null) {
+                          ref.read(productDetailProvider(_productIdInt!).notifier).loadReviews(loadMore: true);
+                        }
+                      },
                 child: isLoadingReviews
                     ? const SizedBox(
                         width: 20,
@@ -950,7 +882,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildReviewItem(Review review) {
+  Widget _buildReviewItem(Review review, Review? myReview) {
     final isMyReview = myReview?.id == review.id;
     
     return Container(
@@ -1063,7 +995,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildSellerInformation() {
+  Widget _buildSellerInformation(Product product) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1087,7 +1019,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 radius: 24,
                 backgroundColor: AppColors.persianIndigo,
                 child: Text(
-                  product!.seller.name[0].toUpperCase(),
+                  product.seller.name[0].toUpperCase(),
                   style: AppTypography.bodyLarge.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -1100,7 +1032,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      product!.seller.name,
+                      product.seller.name,
                       style: AppTypography.bodyLarge.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
@@ -1108,7 +1040,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      product!.seller.formattedRating,
+                      product.seller.formattedRating,
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -1123,14 +1055,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildAddToCartButton() {
+  Widget _buildAddToCartButton(Product product) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surfacePrimary,
         boxShadow: [
           BoxShadow(
-            color: AppColors.textSecondary.withOpacity(0.1),
+            color: AppColors.textSecondary.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -1141,23 +1073,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: product!.inStock
+            onPressed: product.inStock
                 ? () {
                     // Add product to cart using CartBloc
                     context.read<CartBloc>().add(
                       AddToCart(
-                        productId: product!.id.toString(),
-                        name: product!.name,
-                        price: product!.hasValidDiscount 
-                            ? (product!.discountPrice ?? product!.price)
-                            : product!.price,
-                        imageUrl: product!.imageUrl,
+                        productId: product.id.toString(),
+                        name: product.name,
+                        price: product.hasValidDiscount 
+                            ? (product.discountPrice ?? product.price)
+                            : product.price,
+                        imageUrl: product.imageUrl,
                       ),
                     );
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('${product!.name} agregado al carrito'),
+                        content: Text('${product.name} agregado al carrito'),
                         behavior: SnackBarBehavior.floating,
                         backgroundColor: AppColors.persianIndigo,
                         action: SnackBarAction(
@@ -1178,7 +1110,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
             child: Text(
-              product!.inStock ? 'Agregar al Carrito' : 'Agotado',
+              product.inStock ? 'Agregar al Carrito' : 'Agotado',
               style: AppTypography.bodyLarge.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,

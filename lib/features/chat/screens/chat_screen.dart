@@ -1,13 +1,13 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../models/chat_message.dart';
-import '../services/chat_service.dart';
+import '../providers/chat_provider.dart';
 
 /// Chat screen for real-time messaging with a store
-class ChatScreen extends StatefulWidget {
+class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({
     super.key,
     required this.storeId,
@@ -18,146 +18,32 @@ class ChatScreen extends StatefulWidget {
   final String storeName;
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
-  final ChatService _chatService = ChatService();
+class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<ChatMessage> _messages = [];
-  
-  bool _isConnected = false;
-  bool _isTyping = false;
-  Timer? _typingTimer;
-  String? _error;
+  int? _storeId;
 
   @override
   void initState() {
     super.initState();
-    _initializeChat();
+    
+    // Parse and store the storeId
+    _storeId = int.tryParse(widget.storeId);
+    
+    // Scroll to bottom when messages change
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
   }
 
-  Future<void> _initializeChat() async {
-    try {
-      final storeId = int.tryParse(widget.storeId);
-      if (storeId == null) {
-        setState(() {
-          _error = 'ID de tienda inválido';
-        });
-        return;
-      }
-
-      // 1. Load historical messages from database
-      final historicalMessages = await _chatService.loadMessages(storeId);
-      if (mounted && historicalMessages.isNotEmpty) {
-        setState(() {
-          _messages.addAll(historicalMessages);
-        });
-        _scrollToBottom();
-      }
-
-      // 2. Listen to connection status BEFORE connecting
-      _chatService.connectionStatus.listen((isConnected) {
-        if (mounted) {
-          setState(() {
-            _isConnected = isConnected;
-          });
-          
-          // Show notification when connection changes
-          if (!isConnected) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Conexión perdida. Intentando reconectar...'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 2),
-              ),
-            );
-          } 
-        }
-      });
-
-      // 3. Listen to incoming messages (new real-time messages)
-      _chatService.messages.listen((message) {
-        if (mounted) {
-          // Check if message already exists (avoid duplicates)
-          // For messages with IDs, check by ID
-          // For optimistic messages (no ID), check by content + timestamp (within 5 seconds)
-          final exists = _messages.any((m) {
-            // If both have IDs and they match, it's a duplicate
-            if (m.id != null && message.id != null && m.id == message.id) {
-              return true;
-            }
-            
-            // If we have an optimistic message (no ID) and a confirmed message arrives
-            // with the same content around the same time, replace the optimistic one
-            if (m.id == null && message.id != null) {
-              final isSameContent = m.content == message.content;
-              final timeDiff = message.createdAt.difference(m.createdAt).abs();
-              final isRecentlySent = timeDiff.inSeconds < 5;
-              
-              if (isSameContent && isRecentlySent && m.isFromCustomer == message.isFromCustomer) {
-                // Replace optimistic message with confirmed one
-                final index = _messages.indexOf(m);
-                setState(() {
-                  _messages[index] = message;
-                });
-                return true;
-              }
-            }
-            
-            return false;
-          });
-          
-          if (!exists) {
-            setState(() {
-              _messages.add(message);
-            });
-            _scrollToBottom();
-          }
-          
-          // Mark message as read if it's from the store
-          if (!message.isFromCustomer && message.id != null) {
-            _chatService.markMessagesAsRead([message.id!]);
-          }
-        }
-      });
-
-      // 4. Listen to typing indicators
-      _chatService.typingIndicators.listen((indicator) {
-        if (mounted && !indicator.isTyping) {
-          // Store stopped typing
-          setState(() {
-            _isTyping = indicator.isTyping;
-          });
-        }
-      });
-
-      // 5. Connect to WebSocket AFTER setting up listeners
-      await _chatService.connect(storeId);
-      
-      // 6. Manually check connection status after connecting
-      if (mounted && _chatService.isConnected) {
-        setState(() {
-          _isConnected = true;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString().replaceFirst('Exception: ', '');
-        });
-        
-        // Show error in snackbar too
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    }
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _scrollToBottom() {
@@ -173,21 +59,17 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _sendMessage() async {
+    if (_storeId == null) return;
+    
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
     try {
-      // Clear input immediately for better UX
       _messageController.clear();
 
-      // Send to server (both WebSocket and HTTP)
-      await _chatService.sendMessage(content: text);
-
-      // Stop typing indicator
-      await _chatService.sendTypingIndicator(false);
-      _typingTimer?.cancel();
+      await ref.read(chatProvider(_storeId!).notifier).sendMessage(text);
       
-      // The message will appear via WebSocket stream or can be added optimistically
+      _scrollToBottom();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -201,24 +83,14 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _onMessageChanged(String text) {
-    // Send typing indicator
-    if (text.isNotEmpty) {
-      _chatService.sendTypingIndicator(true);
-      
-      // Reset typing timer
-      _typingTimer?.cancel();
-      _typingTimer = Timer(const Duration(seconds: 2), () {
-        _chatService.sendTypingIndicator(false);
-      });
-    } else {
-      _chatService.sendTypingIndicator(false);
-      _typingTimer?.cancel();
-    }
+    if (_storeId == null) return;
+    
+    ref.read(chatProvider(_storeId!).notifier).handleTyping(text);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_error != null) {
+    if (_storeId == null) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Error'),
@@ -236,17 +108,45 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  _error!,
+                  'ID de tienda inválido',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodyLarge,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final chatState = ref.watch(chatProvider(_storeId!));
+
+    if (chatState.error != null && chatState.error!.isNotEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Error'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: AppColors.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  chatState.error!,
                   textAlign: TextAlign.center,
                   style: AppTypography.bodyLarge,
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {
-                    setState(() {
-                      _error = null;
-                    });
-                    _initializeChat();
+                    ref.read(chatProvider(_storeId!).notifier).retry();
                   },
                   child: const Text('Reintentar'),
                 ),
@@ -276,11 +176,11 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
             Text(
-              _isConnected ? 'En línea' : 'Desconectado',
+              chatState.isConnected ? 'En línea' : 'Desconectado',
               style: AppTypography.labelSmall.copyWith(
-                color: _isConnected 
-                    ? Colors.white.withOpacity(0.9)
-                    : Colors.white.withOpacity(0.6),
+                color: chatState.isConnected 
+                    ? Colors.white.withValues(alpha: 0.9)
+                    : Colors.white.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -297,11 +197,11 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Column(
         children: [
           // Connection status banner
-          if (!_isConnected)
+          if (!chatState.isConnected)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              color: AppColors.warning.withOpacity(0.1),
+              color: AppColors.warning.withValues(alpha: 0.1),
               child: Row(
                 children: [
                   Icon(
@@ -322,7 +222,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
           // Messages list
           Expanded(
-            child: _messages.isEmpty
+            child: chatState.messages.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -353,13 +253,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length + (_isTyping ? 1 : 0),
+                    itemCount: chatState.messages.length + (chatState.isTyping ? 1 : 0),
                     itemBuilder: (context, index) {
-                      if (index == _messages.length && _isTyping) {
+                      if (index == chatState.messages.length && chatState.isTyping) {
                         return _buildTypingIndicator();
                       }
                       
-                      final message = _messages[index];
+                      final message = chatState.messages[index];
                       return _MessageBubble(message: message);
                     },
                   ),
@@ -427,7 +327,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.send, color: Colors.white),
-                      onPressed: _isConnected ? _sendMessage : null,
+                      onPressed: chatState.isConnected ? _sendMessage : null,
                     ),
                   ),
                 ],
@@ -479,21 +379,12 @@ class _ChatScreenState extends State<ChatScreen> {
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: AppColors.textTertiary.withOpacity(opacity),
+            color: AppColors.textTertiary.withValues(alpha: opacity),
             shape: BoxShape.circle,
           ),
         );
       },
     );
-  }
-
-  @override
-  void dispose() {
-    _chatService.dispose();
-    _messageController.dispose();
-    _scrollController.dispose();
-    _typingTimer?.cancel();
-    super.dispose();
   }
 }
 
@@ -516,7 +407,7 @@ class _MessageBubble extends StatelessWidget {
           if (!isMe) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: AppColors.persianIndigo.withOpacity(0.1),
+              backgroundColor: AppColors.persianIndigo.withValues(alpha: 0.1),
               child: Icon(
                 Icons.store,
                 size: 18,
@@ -556,7 +447,7 @@ class _MessageBubble extends StatelessWidget {
                         _formatTime(message.createdAt),
                         style: AppTypography.caption.copyWith(
                           color: isMe
-                              ? Colors.white.withOpacity(0.7)
+                              ? Colors.white.withValues(alpha: 0.7)
                               : AppColors.textTertiary,
                         ),
                       ),
@@ -571,7 +462,7 @@ class _MessageBubble extends StatelessWidget {
                           size: 14,
                           color: message.isRead
                               ? Colors.blue.shade200
-                              : Colors.white.withOpacity(0.7),
+                              : Colors.white.withValues(alpha: 0.7),
                         ),
                       ],
                     ],
@@ -584,7 +475,7 @@ class _MessageBubble extends StatelessWidget {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 16,
-              backgroundColor: AppColors.mauve.withOpacity(0.2),
+              backgroundColor: AppColors.mauve.withValues(alpha: 0.2),
               child: Icon(
                 Icons.person,
                 size: 18,
