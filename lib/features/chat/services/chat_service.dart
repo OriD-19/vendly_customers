@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -92,7 +91,7 @@ class ChatService {
       // Set connected status AFTER stream is set up
       _isConnected = true;
       _connectionController!.add(true);
-    } catch (e, stackTrace) {
+    } catch (e) {
       _handleDisconnection();
       rethrow;
     }
@@ -131,7 +130,7 @@ class ChatService {
 
         default:
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       print('   ❌ Error al manejar mensaje entrante: $e');
     }
   }
@@ -147,7 +146,6 @@ class ChatService {
     }
 
     try {
-      // 1. Create optimistic message (show immediately in UI)
       final optimisticMessage = ChatMessage(
         id: null, // Will be set by server
         content: content,
@@ -162,7 +160,6 @@ class ChatService {
 
       _messageController!.add(optimisticMessage);
 
-      // 2. Send via WebSocket for real-time delivery
       final messageData = WebSocketMessage(
         type: 'send_message',
         data: {
@@ -176,8 +173,7 @@ class ChatService {
       final jsonMessage = json.encode(messageData.toJson());
       _channel!.sink.add(jsonMessage);
 
-      // 3. Persist to database via HTTP
-      final result = await ChatRepository.sendMessage(
+      final _ = await ChatRepository.sendMessage(
         content: content,
         storeId: _currentStoreId!,
         messageType: messageType,
@@ -190,7 +186,6 @@ class ChatService {
     }
   }
 
-  /// Send typing indicator
   Future<void> sendTypingIndicator(bool isTyping) async {
     if (!_isConnected || _channel == null) {
       return;
@@ -210,7 +205,6 @@ class ChatService {
     }
   }
 
-  /// Mark messages as read
   Future<void> markMessagesAsRead(List<int> messageIds) async {
     if (!_isConnected || _channel == null || messageIds.isEmpty) {
       return;
@@ -230,14 +224,12 @@ class ChatService {
     }
   }
 
-  /// Handle disconnection
   void _handleDisconnection() {
     _isConnected = false;
     _currentStoreId = null;
     _connectionController!.add(false);
   }
 
-  /// Disconnect from WebSocket
   Future<void> disconnect() async {
     if (_channel != null) {
       await _channel!.sink.close(status.goingAway);
@@ -246,7 +238,6 @@ class ChatService {
     _handleDisconnection();
   }
 
-  /// Dispose resources
   void dispose() {
     disconnect();
     _messageController?.close();
